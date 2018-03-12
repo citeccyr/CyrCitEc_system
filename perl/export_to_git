@@ -1,0 +1,145 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use Data::Dumper;
+use File::Basename;
+use File::Path;
+use File::Slurper;
+use List::Util qw(shuffle);
+
+my $home_dir=$ENV{'HOME'};
+my $crontab_file="$home_dir/etc/crontab";
+my $self_file="$home_dir/perl/export_to_git";
+my $lib_dir="$home_dir/lib/perl";
+
+## files to put in the repo
+my $to_repo;
+$to_repo->{$crontab_file}=1;
+$to_repo->{$self_file}=1;
+
+my $to_parse=&look_for($crontab_file,'bin');
+$to_parse=&look_for($crontab_file,'perl',$to_parse);
+
+## get perl calls form files in bin
+foreach my $file (keys %{$to_parse->{'bin'}}) {
+  $to_parse=&look_for($file,'perl',$to_parse);
+}
+
+## find local library names
+my $local_libs;
+foreach my $lib (`ls $lib_dir`) {
+  chomp $lib;
+  push(@{$local_libs},$lib);
+}
+
+## parse for libraries
+foreach my $perl_file (keys %{$to_parse->{'perl'}}) {
+  &parse_perl_file($perl_file);
+}
+
+sub parse_perl_file {
+  my $perl_file=shift;
+  ## it does not see the ~
+  $perl_file=~s|^~|$home_dir|;
+  ## recitex can not be parsed, and it has no local
+  ## libraries
+  if($perl_file eq '/home/cec/perl/recitex.pl') {
+    return;
+  }
+  my @lines;
+  eval {
+    @lines=File::Slurper::read_lines($perl_file);
+  };
+  if($@) {
+    print "I can't read $perl_file\n";
+  }
+  foreach my $line (@lines) {
+    $to_repo=&look_for_perl_library($line,$to_repo,$local_libs);
+  }
+  $to_repo->{$perl_file}=1;
+}
+
+foreach my $in_file (keys %{$to_repo}) {
+  my $out_file=$in_file;
+  $out_file=~s|$home_dir|$home_dir/git|;
+  my $dir=dirname($out_file);
+  if(not -d $dir) {
+    mkpath($dir);
+  }
+  system("rsync -va $in_file $out_file");
+  my $ga_file=$in_file;
+  $ga_file=~s|$home_dir/||;
+  system("cd $home_dir/git ; git add $ga_file");
+}
+
+sub look_for_perl_library {
+  my $line=shift;
+  my $to_repo=shift;
+  my $local_libs=shift;
+  foreach my $lib_start (@{$local_libs}) {
+    if(not $line=~m|^use\s+$lib_start|) {
+      next;
+    }
+    ## we don't export FindCit
+    #if($line=~m|FindCit|) {
+    #  return $to_repo;
+    #}
+    my $file=use_to_file($line);
+    if(not -f $file) {
+      die "I can't see $file";
+    }
+    if($to_repo->{$file}) {
+      next;
+    }
+    ## secondary parse of libary
+    &parse_perl_file($file);
+    $to_repo->{$file}=1;
+  }
+  return $to_repo;
+}
+
+sub use_to_file {
+  my $use=shift;
+  ## use with qw statement
+  $use=~s|\s*qw.*|;|;
+  print $use;
+  my $file=$use;
+  $file=~s|use\s+||;
+  $file=~s|::|/|g;
+  $file=~s|;\s*$|.pm|g;
+  $file="$lib_dir/$file";
+  return $file;
+}
+
+
+
+
+sub look_for {
+  my $file=shift;
+  my $to_look=shift;
+  my $out=shift // {} ;
+  ## it does not see the ~
+  $file=~s|^~|$home_dir|;
+  if(not -f $file) {
+    print "I don't see the file $file.\n";
+    return;
+  }
+  my @lines=File::Slurper::read_lines($file);
+  foreach my $line (@lines) {
+    if($line=~m|^\s*$|) {
+      next;
+    }
+    if($line=~m|^\s*#|) {
+      next;
+    }
+    if($line=~m|^SHELL|) {
+      next;
+    }
+    if($line=~m|(\S+/$to_look/\S+)|) {
+      $out->{$to_look}->{$1}=1;
+    }
+  }
+  return $out;
+}

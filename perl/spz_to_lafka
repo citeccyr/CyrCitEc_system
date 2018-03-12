@@ -1,0 +1,138 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use Carp qw(confess);
+use Data::Dumper;
+use File::Slurper;
+use List::Util qw(shuffle);
+use Getopt::Std;
+
+use Cidig::Files;
+use Lafka::Input;
+use Lafka::Json;
+use Lafka::Paths;
+use XML::LibXSLT;
+use XML::LibXML;
+use Cec::Paths;
+
+my $motto='spz';
+
+my %o;
+getopts('isw:n',\%o);
+
+my $do_input_read=$o{'i'} // '';
+my $skip_input_read=$o{'s'} // '';
+my $do_wait=$o{'w'} // 0;
+my $skip_existing_warc=$o{'n'} // '';
+
+my $dirs=$Cec::Paths::dirs;
+my $files=$Cec::Paths::files;
+my $home_dir=$dirs->{'home'};
+my $bada_dir=$dirs->{'bada'};
+
+my $bada_sum=$Cec::Paths::files->{'bada_sum'};
+my $today=`date -I`;
+chomp $today;
+my $handles_file=$files->{'futlis'};
+
+my $xslt = XML::LibXSLT->new();
+
+## we are just looking at entry dates.
+my $entry_dir="$bada_dir/entry";
+my $entry_xslt_file = $dirs->{'xslt'}.'/entry_date.xslt.xml';
+my $entry_style_doc = XML::LibXML->load_xml(location=>$entry_xslt_file,  no_cdata=>1);
+my $entry_stylesheet = $xslt->parse_stylesheet($entry_style_doc);
+my $futli_xslt_file = $dirs->{'xslt'}.'/futlis_from_spz.xslt.xml';
+my $futli_style_doc = XML::LibXML->load_xml(location=>$futli_xslt_file, no_cdata=>1);
+my $futli_stylesheet = $xslt->parse_stylesheet($futli_style_doc);
+
+
+my $in_dir=$dirs->{'input'};
+if(not -f $handles_file) {
+  &renew_handles_file($dirs->{'input'});
+}
+elsif(not $skip_input_read) {
+  print "I'm finding last time in $in_dir ..." ;
+  my $in_time=&Cidig::Files::find_most_recent_time_in_directory($in_dir);
+  print " as $in_time.\n";
+  my $handles_time=&Cidig::Files::mtime($handles_file);
+  if($in_time < $handles_time) {
+    &renew_handles_file("$in_dir/");
+  }
+  else {
+    print "I don't need to renew $handles_file\n";
+  }
+}
+
+my $in=&Lafka::Json::load($handles_file);
+my $i=Lafka::Input->new({'ris' => 'spz',
+			 'skip_existing' => $skip_existing_warc,
+			 'wait' => $do_wait,
+			 'verbose'=>1});
+#			 'conf'=> 'lafka_spz'});
+## do a limited amount
+my $count_done=0;
+my $max_done=$ARGV[0] // 0;
+foreach my $papid (shuffle (keys %$in)) {
+  my $futlis=$in->{$papid};
+  if(not $futlis) {
+    confess "I need futlis for $papid.";
+  }
+  my $count_got=$i->get($papid,$futlis,{'verbose'=>1});
+  #$i->check_id_file_idempotency($papid) and next;
+  $count_done=$count_done+$count_got;
+  if($count_done >= $max_done) {
+    last;
+  }
+}
+
+sub renew_handles_file {
+  my $dir=shift;
+  if(not -d $dir) {
+    confess "I don't have you dir $dir";
+  }
+  my $out;
+  my $count=0;
+  my $xslt_dir=$dirs->{'xslt'} // confess "I need an xslt directory";
+  foreach my $file (`find $dir -type f -name '*.xml'`) {
+    chomp $file;
+    my $fufi="$file";
+    my $source;
+    eval {
+      $source = XML::LibXML->load_xml(location => $file);
+    };
+    if(not $source) {
+      print "I can't parse $file\n";
+      next;
+    }
+    my $entry_results = $entry_stylesheet->transform($source);
+    my @lines;
+    ## ???
+    if($file=~m|$today|) {
+      print "I skip $file because of $today.";
+      next;
+    }
+    if($file=~m|/cyberleninka/|) {
+      print "I skip $file because of cyberleninka.";
+      next;
+    }
+    #print "I look at $file\n";
+    my $s="xsltproc $xslt_dir/futlis_from_spz.xslt.xml $fufi";
+    foreach my $line (shuffle `$s`) {
+      my @parts=split(' ',$line);
+      ## no futli?
+      if(not $parts[1]) {
+	print "I have no futly for $file\n";
+	print "I ran $s\n";
+	next;
+      }
+      my $count=1;
+      while($parts[$count]) {
+	push(@{$out->{$parts[0]}},$parts[$count++]);
+      }
+    }
+  }
+  &Lafka::Json::save($out,$handles_file);
+}

@@ -1,0 +1,10 @@
+SHELL=/bin/bash
+PERL5LIB=/home/cec/lib/perl:/home/cec/git/ParsCit/lib:/home/cec/usr/share/perl
+
+29 * * * * ~/perl/spz_to_lafka 100 > ~/var/log/spz2l.log 2> ~/var/log/spz2l.err ;
+
+##
+10 0 * * * ~/bin/daily_update
+
+## alse fires up bada indexing
+04 07,19 * * *  ~/bin/get_vicwork

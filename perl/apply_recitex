@@ -1,0 +1,28 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use Cidig::Peren;
+use Cec::Paths;
+use Cec::Warcs;
+
+use Cec::Sphinx;
+
+&Cec::Sphinx::make_sure_its_up();
+
+#exit;
+
+
+my $dir=$Cec::Paths::dirs;
+my $files=$Cec::Paths::files;
+
+my $p=Cidig::Peren->new({'verbose'=>1,
+#			 'run_strict'=>1,
+			 'cache_ok'=>0,
+			 'force'=>0});
+
+my $to_apply=$files->{'recitex_script'}.' -b '.$files->{'handle_db'};
+$p->apply($to_apply,'\.json$','.reci.xml',$Cec::Warcs::handle_from_peren);
+
+#$p->parscit_texts();

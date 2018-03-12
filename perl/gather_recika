@@ -1,0 +1,201 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use Carp qw(confess);
+use Data::Dumper;
+use File::Basename;
+use URI::Escape;
+use XML::LibXML;
+
+use Cec::Paths;
+use Cec::Warcs;
+use Cidig::Peren;
+use Cidig::Peren::Warcs;
+use Warc::File;
+
+my $dirs=$Cec::Paths::dirs;
+my $files=$Cec::Paths::files;
+
+my $warc_dir=$dirs->{'warc'};
+my $peren_dir=$dirs->{'peren'};
+#my $tmp_file=&prep_file_list();
+
+my $p=Cidig::Peren->new({'verbose'=>'1',
+			 'force'=>0});
+my $tmp_file=$p->prep_file_list('reci.xml');
+
+my $total_files=`grep -c ^ $tmp_file`;
+chomp $total_files;
+
+
+sub is_most_recent {
+  my $file=shift;
+  if(not -f $file) {
+    confess "I need a file here.";
+  }
+  my $age=-M $file;
+  my $dir=dirname($file);
+  opendir(my $dh, $dir) or confess "I can't open $dir: $!";
+  while(readdir $dh) {
+    my $bana=$_;
+    my $fufi="$dir/$bana";
+    if($fufi eq $file) {
+      next;
+    }
+    if(-M $fufi < $age) {
+      closedir $dh;
+      return 0;
+    }
+  }
+  closedir $dh;
+  return 1;
+}
+
+
+my $count_done=0;
+while($peren_dir=`/usr/bin/shuf -n 1 $tmp_file`) {
+  if($count_done++ > $total_files) {
+    last;
+  }
+  chomp $peren_dir;
+  my $out_file="$peren_dir/summary.xml";
+  if(-f $out_file and not -z $out_file and &is_most_recent($out_file)) {
+    # print "I skip the recent out_file $out_file\n";
+    next;
+  }
+  my $warc_file=$p->peren_dir_to_warc($peren_dir);
+  my $handle=lc(&Cidig::Peren::Warcs::get_handle_from_warc($warc_file));
+  my $warc=Warc::File->new({'file'=>$warc_file});
+  #$warc->open_read_file();
+  my $pdfs=$warc->get_pdfs();
+  my $futlis;
+  my $reci_docs;
+  my $reci_files;
+  my $count_futli=0;
+  my $total_pdf=scalar @$pdfs;
+  if(not $total_pdf) {
+    print "warc $warc_file has no PDF\n";
+  }
+  foreach my $pdf (@$pdfs) {
+    $futlis->{$pdf->{'Futli'}}->{$pdf->{'date'}}=$pdf;
+    my $reci_file=$peren_dir.'/'.$count_futli++.'.pdf-stream.reci.xml';
+    if(not -f $reci_file) {
+      print "I don't see $reci_file\n";
+      next;
+    }
+    my $reci_doc=&get_doc($reci_file);
+    if(not $reci_doc) {
+      print "$reci_file is not well-formed\n";
+      print "I remove $reci_file\n";
+      unlink $reci_file;
+      next;
+    }
+    $reci_docs->{$pdf->{'Futli'}}->{$pdf->{'date'}}=$reci_doc;
+    $reci_files->{$pdf->{'Futli'}}->{$pdf->{'date'}}=$reci_file;
+  }
+  if(not scalar @$pdfs) {
+    print "I have no pdfs for $peren_dir\n";
+    next;
+  }
+  if(not scalar keys %$reci_docs) {
+    print "I have no valid reci_docs for $peren_dir\n";
+    next;
+  }
+  if(not -f $warc_file) {
+    confess "I don't see the warc_file '$warc_file'";
+  }
+  my $out_doc=XML::LibXML::Document->new('1.0','UTF-8');
+  my $futlis_ele=&make_futlis($futlis,$reci_docs,$out_doc,$reci_files,$handle);
+  $out_doc->setDocumentElement($futlis_ele);
+  #print "I print to $out_file  ... ";
+  ## on success status is undefined
+  my $status=eval {
+    $out_doc->toFile($out_file,2);
+  };
+  if(defined($status)) {
+    print "I wrote $out_file, with status $status.\n";
+  }
+}
+
+sub make_futlis {
+  my $futlis=shift;
+  my $reci_docs=shift;
+  my $doc=shift;
+  my $reci_files=shift;
+  my $handle=shift // confess "I need a handle here.";
+  my $futlis_ele=$doc->createElement('source');
+  foreach my $futli (keys %$futlis) {
+    my $futli_ele=$doc->createElement('futli');
+    $futli_ele->setAttribute('url',$futli);
+    foreach my $time (keys %{$futlis->{$futli}}) {
+      my $this_pdf=$futlis->{$futli}->{$time};
+      my $this_reci_doc=$reci_docs->{$futli}->{$time};
+      my $this_reci_file=$reci_files->{$futli}->{$time};
+      my $version_ele=$doc->createElement('version');
+      my $url=&warc_to_rsync_url($this_pdf->{'warc'});
+      $version_ele->setAttribute('url',$url);
+      $version_ele->setAttribute('start',$this_pdf->{'start'});
+      $version_ele->setAttribute('length',$this_pdf->{'length'});
+      my $document_ele=$this_reci_doc->documentElement;
+      my $source_ele=$document_ele->getElementsByTagName('source')->[0];
+      ## use the handle as found in the recitex output
+      my $err_file="$this_reci_file.err";
+      if(-f $err_file and -s $err_file) {
+	print "I have $err_file, I delete $err_file and $this_reci_file\n";
+	unlink $err_file;
+	unlink $this_reci_file;
+	next;
+      }
+      $source_ele->setAttribute('handle',$handle);
+      $futlis_ele->setAttribute('handle',$handle);
+      ## get the child of the source, the text
+      my $text_ele=$source_ele->getElementsByTagName('text')->[0];
+      my $rich_att=$text_ele->getAttribute('rich');
+      $text_ele->setAttribute('rich',&peren_loc_to_rsync($rich_att));
+      ## go to the child of the source, the input just to change its data=
+      my $input_ele=$text_ele->getElementsByTagName('input')->[0];
+      my $data_att=$input_ele->getAttribute('data');
+      $input_ele->setAttribute('data',&peren_loc_to_rsync($data_att));
+      $version_ele->appendText(" \n");
+      $version_ele->appendChild($text_ele);
+      $version_ele->appendText("\n");
+      $futli_ele->appendText(" \n");
+      $futli_ele->appendChild($version_ele);
+    }
+    $futlis_ele->appendText("\n");
+    $futlis_ele->appendChild($futli_ele);
+  }
+  $futlis_ele->appendText("\n");
+  return $futlis_ele;
+}
+
+sub peren_loc_to_rsync {
+  my $in=shift // confess "I need some input here.";
+  my $out=$in;
+  $out=~s|.*/peren|rsync://evstu.openlib.org/peren|;
+  return $out;
+}
+
+
+sub warc_to_rsync_url {
+  my $file=shift;
+  my $base='rsync://evstu.openlib.org/warc';
+  my $warc_dir=$dirs->{'warc'};
+  my $url=$base.substr($file,length($warc_dir));
+  return $url;
+}
+
+sub get_doc {
+  my $file=shift;
+  if(not -f $file) {
+    confess "I can't get $file";
+  }
+  open my $fh, '<', $file // confess "I can't open your file $file.";
+  binmode $fh; # drop all PerlIO layers possibly created by a use open pragma
+  my $doc = eval {
+    XML::LibXML->load_xml(IO => $fh);
+  };
+  return $doc;
+}

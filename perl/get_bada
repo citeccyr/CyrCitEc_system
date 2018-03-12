@@ -1,0 +1,76 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use File::Path;
+use XML::LibXSLT;
+use XML::LibXML;
+
+use Cec::Bada;
+use Cec::Dates;
+use Cec::Paths;
+use Cec::Xslt;
+
+my $limit=$ARGV[0] // '';
+if($limit) {
+  $limit="-mtime -$limit";
+}
+
+my $dirs=$Cec::Paths::dirs;
+my $input_dir=$dirs->{'input'};
+my $bada_dir=$dirs->{'bada'};
+
+my $ways=$Cec::Bada::ways;
+my @ways=keys %$ways;
+
+## files appened to, then sou'ed.
+my $files;
+
+## get the sheets
+my $sheets;
+foreach my $way (@ways) {
+  $sheets->{$way}=&Cec::Xslt::get_sheet($way.'_date');
+  $files->{$way}={};
+}
+
+foreach my $file (`find $input_dir -type 'f' $limit`) {
+  chomp $file;
+  my $source;
+  eval {
+    $source = XML::LibXML->load_xml(location => $file);
+  };
+  if(not $source) {
+    print "I can't parse $file\n";
+    next;
+  }
+  foreach my $way (@ways) {
+    my $results = $sheets->{$way}->transform($source);
+    my $out=$sheets->{$way}->output_as_bytes($results);
+    if(not $out) {
+      die "I can't see the $way date in $file.";
+    }
+    my $date=&Cec::Dates::regular_date($out);
+    if(not $date=~m|^\d{4}-\d{2}-\d{2}$|) {
+      print "You gave my a junk $way date $date in $file\n";
+      next;
+    }
+    my $base_file=&Cec::Bada::date_to_file($date);
+    my $out_file="$bada_dir/$way/$base_file";
+    my $open=open(F,">> $out_file");
+    if(not $open) {
+      print "I can't open $out_file\n";
+      next;
+    }
+    print F "$file\n";
+    close F;
+    $files->{$way}->{$out_file}=1;
+  }
+}
+
+foreach my $way (@ways) {
+  foreach my $file (keys %{$files->{$way}}) {
+    my $s="sort $file | uniq > $file.sou ; mv $file.sou $file";
+    system($s);
+  }
+}
