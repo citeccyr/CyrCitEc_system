@@ -65,7 +65,7 @@ $input2id->{'spz'}=sub {
   $id=~s|/|:|;
   $id=~s|/|:|;
   #my $id1=$id;
-  $id=~s|^[^:]{3}:|RePEc:gai:|;
+  $id=~s/^([^:]{3}):/RePEc:$1:/;
   $id=~s|^neicon:|spz:neicon:|;
   $id=~s|^rnp:|RePEc:rnp:|;
   #die "$id1 $id";
