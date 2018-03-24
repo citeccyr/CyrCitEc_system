@@ -160,7 +160,7 @@ sub get_past_dates_from_number {
     }
   }
   else {
-    $start_date=&Ernad::Common::today();
+    $start_date=&today();
   }
   my $dates=[];
   if(not $number=~m|^\d+|) {
