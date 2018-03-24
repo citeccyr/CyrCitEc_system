@@ -41,6 +41,7 @@ foreach my $perl_file (keys %{$to_parse->{'perl'}}) {
   &parse_perl_file($perl_file);
 }
 
+## I add all the XSLT files. I will clean them manually
 my $xslt_dir=$Cec::Paths::dirs->{'xslt'};
 foreach my $xslt_bana (`ls $xslt_dir`) {
   chomp $xslt_bana;
@@ -63,6 +64,7 @@ foreach my $in_file (keys %{$to_repo}) {
   $ga_file=~s|$home_dir/||;
   system("cd $home_dir/git ; git add $ga_file");
   system("cd $home_dir/git ; git commit -a -m 'automated commit by export_to_git'");
+  system("cd $home_dir/git ; git push -u origin master");
 }
 
 sub parse_perl_file {
