@@ -135,6 +135,10 @@ sub apply {
       print "I run '$s' ...";
     }
     system($s);
+    if(not -z $err) {
+      my $err_text=&File::Slurper::read_text($err);
+      warn "\n\nrecitex ended with an error\n '$err_text'.";
+    }
     if($p->{'verbose'}) {
       print " done\n"
     }
