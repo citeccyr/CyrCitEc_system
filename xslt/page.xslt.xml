@@ -31,7 +31,10 @@
         <xsl:copy-of select="extra_head"/>
       </head>
       <xsl:text>&#10;</xsl:text>
-      <xsl:copy-of select="$body"/>
+      <body>
+	<xsl:text>&#10;</xsl:text>
+	<xsl:copy-of select="$body"/>
+      </body>
       <xsl:text>&#10;</xsl:text>
     </html>
   </xsl:template>
