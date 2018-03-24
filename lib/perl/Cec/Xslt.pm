@@ -9,6 +9,9 @@ use XML::LibXML;
 
 use Cec::Paths;
 
+## a collections of sheets
+my $x;
+
 sub get_sheet {
   my $name=shift;
   my $xslt = XML::LibXSLT->new();
@@ -21,5 +24,33 @@ sub get_sheet {
   return $sheet;
 }
 
+sub transform {
+  my $in=shift;
+  my $name=shift;
+  if(not ref($in)) {
+    my $file=$in;
+    if(not -f $file) {
+      confess "I can't see your file $file.";
+    }
+    if(-z $file) {
+      unlink $file;
+      return;
+    }
+    eval {
+      $in = XML::LibXML->load_xml(location=>$file,  no_cdata=>1);
+    };
+    if($@) {
+      print "$file $@\n";
+      unlink $file;
+      return undef;
+    }
+  }
+  if(not $x->{$name}) {
+    $x->{$name}=&get_sheet($name);
+  }
+  my $result=$x->{$name}->transform($in);
+  #return $x->{$name}->output_as_bytes($result);
+  return $result;
+}
 
 1;
