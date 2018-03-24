@@ -1,0 +1,295 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use Carp qw(confess);
+use Data::Dumper;
+use File::Basename;
+use File::Slurper;
+use Getopt::Std;
+use List::Util qw(shuffle);
+
+use Cec::Paths;
+use Cec::Xslt;
+#use Cidig::Peren::Warcs;
+use Cidig::Ris;
+use Cec::Warcs;
+use Lafka::Json;
+use Warc::File;
+
+## -c calculate
+## -s show
+## -n no save of calculations
+## -i calculate increment
+## -o /type/ only do calculation type
+## -v verbose
+##
+getopts('icso:n');
+
+our ($opt_c,$opt_s,$opt_o,$opt_i,$opt_n,$opt_v);
+
+my $dirs=$Cec::Paths::dirs;
+my $files=$Cec::Paths::files;
+my $warc_dir=$dirs->{'warc'};
+my $input_dir=$dirs->{'input'};
+my $peren_dir=$dirs->{'peren'};
+
+## all fields
+my @fields=('records','has_futli','warcs','warcs','json','recitex','refs_found','intc','refc');
+
+binmode(STDOUT,'utf8');
+## the results table
+my $t;
+
+## functions to calculate the results
+my $f;
+
+$f->{'records'} = sub {
+  my @founds=`find $input_dir -type f -name '*.xml'`;
+  foreach my $found (shuffle @founds) {
+    chomp $found;
+    $found=~s|^$input_dir/||;
+    my $handle=lc(&{$Cidig::Ris::input2id->{'spz'}}($found));
+    my $series=&series($handle) // next;
+    $t->{$series}->{'records'}++;
+  }
+};
+
+$f->{'has_futli'} = sub {
+  my $in=&Lafka::Json::load($files->{'futlis'});
+  foreach my $found (keys %$in) {
+    my $series=&series($found);
+    $t->{$series}->{'has_futli'}++;
+  }
+};
+
+$f->{'warcs'} = sub {
+  my @founds=`find $warc_dir -type f -name '*.warc'`;
+  foreach my $found (shuffle @founds) {
+    chomp $found;
+    my $handle=lc(&{$Cec::Warcs::handle_from_warc}($found)) // next;
+    my $series=&series(lc($handle)) // next;
+    $t->{$series}->{'warcs'}++;
+    if(not -f $found) {
+      confess "I don't see $found.\n";
+    }
+    my $warc=Warc::File->new({'file'=>$found});
+    my $pdfs=$warc->get_pdfs() // [];
+    my $total_pdf=scalar @{$pdfs};
+    if($total_pdf) {
+      $t->{$series}->{'pdf_warcs'}++;
+    }
+  }
+};
+
+$f->{'json'} = sub {
+  my @founds=`find $peren_dir -type f -name '*.json'`;
+  foreach my $found (shuffle @founds) {
+    chomp $found;
+    my $dir=dirname($found);
+    $dir=~s|$peren_dir/*|| or die;
+    my $handle=lc(&{$Cidig::Ris::file2id->{'spz'}}($dir));
+    my $series=&series($handle) // next;
+    $t->{$series}->{'json'}++;
+  }
+};
+
+$f->{'reci'} = sub {
+  my @founds=`find $peren_dir -type f -name '*.reci.xml'`;
+  foreach my $found (shuffle @founds) {
+    chomp $found;
+    my $refc=&Cec::Xslt::transform($found,'refc') // next;
+    my $intc=&Cec::Xslt::transform($found,'intc');
+    my $citc=&Cec::Xslt::transform($found,'citc');
+    my $dir=dirname($found);
+    $dir=~s|$peren_dir/*|| or die;
+    my $handle=lc(&{$Cidig::Ris::file2id->{'spz'}}($dir));
+    my $series=&series($handle) // next;
+    if($refc) {
+      $t->{$series}->{'refs'}+=1;
+      $t->{$series}->{'cref'}+=$refc;
+    }
+    if($citc) {
+      $t->{$series}->{'cits'}+=1;
+      $t->{$series}->{'ccit'}+=$citc;
+    }
+    if($intc) {
+      $t->{$series}->{'ints'}+=1;
+      $t->{$series}->{'cint'}+=$intc;
+    }
+  }
+};
+
+## calculated series by handle
+sub series {
+  my $in=shift // confess "I need an input here.";
+  ## check if this is a series handle
+  if($in=~m|^([^:]+:[^:]+:[^:]+)$|) {
+    if($opt_v) {
+      print "I skip the apparent series handle '$in'\n";
+    }
+    return undef;
+  }
+  $in=~m|^([^:]+:[^:]+:[^:]+):|;
+  my $series=$1;
+  if(not $series) {
+    if($opt_v) {
+      print "I have no series for '$in'\n";
+    }
+    return undef;
+  }
+  else {
+    #print "series is $series\n";
+  }
+  ## fixMe: I don't know why I have to do this.
+  #$series=~s|^spz:neicon:neicon|spz:neicon:|;
+  #$series=~s|^repec:(...):\1|repec:$1:|;
+  #if(not $series) {
+  #  print "I can't form a series for '$in'.\n";
+  #  return 0;
+  #}
+  return lc($series);
+}
+
+## main function to calcalue
+sub calculate {
+  if($opt_i) {
+    $t=&Lafka::Json::load($files->{'table_results'});
+  }
+  #my @fields=('records','warcs','futlis','json','link','refc','intc')) {
+  my @stacks=('records','has_futli','warcs','json','reci');
+  foreach my $run (shuffle (@stacks)) {
+    if($opt_o and $run ne $opt_o) {
+      if($opt_v) {
+	print "I only do $opt_o. Therefore I skip $run.\n";
+      }
+      next;
+    }
+    if($opt_i and is_complete_for_field($run)) {
+      if($opt_v) {
+	print "I'm already done for field $run.\n";
+      }
+      next;
+    }
+    if($f->{$run}) {
+      if($opt_v) {
+	print "I am doing $run ... ";
+      }
+      ## populates $t, a global variabe
+      &{$f->{$run}};
+      if($opt_v) {
+	print "done\n";
+      }
+    }
+    else {
+      if($opt_v) {
+	print "I can't run '$run'\n";
+      }
+    }
+    if(not $opt_n) {
+      if($opt_v) {
+	print "I save \$t\n";
+	print Dumper $t;
+      }
+      &Lafka::Json::save($t,$files->{'table_results'});
+    }
+  }
+}
+
+sub doc {
+  my $in=shift;
+  my $doc = XML::LibXML::Document->new('1.0','utf8');
+  my $table_ele=$doc->createElement('table');
+  foreach my $series (sort keys %$in) {
+    my $series_ele=$doc->createElement('series');
+    $series_ele->setAttribute('id',$series);
+    $series_ele->appendText("\n  ");
+    foreach my $field (sort keys %{$in->{$series}}) {
+      my $field_ele=$doc->createElement($field);
+      $field_ele->appendText($in->{$series}->{$field});
+      $series_ele->appendChild($field_ele);
+      $series_ele->appendText("\n  ");
+    }
+    $table_ele->appendChild($series_ele);
+    $table_ele->appendText("\n ");
+  }
+  $doc->setDocumentElement($table_ele);
+  return $doc;
+}
+
+sub show {
+  my $in=&Lafka::Json::load($files->{'table_results'});
+  my $doc=&doc($in);
+  my $out=&Cec::Xslt::transform($doc,'table');
+  if($opt_v) {
+    print $out;
+  }
+  $out->toFile($files->{'stats_output'});
+}
+
+sub show_text_old {
+  my $in=shift;
+  my $series_width=36;
+  my $sum={};
+  printf('%'.$series_width.'s','');
+  foreach my $field (@fields) {
+    my $field_width=length($field)+2;
+    my $field_format='%'.$field_width.'s';
+    printf($field_format, $field);
+    $sum->{$field}=0;
+  }
+  print "\n";
+  foreach my $series (keys %$in) {
+    if(not $series) {
+      next;
+    }
+    printf('%-'.$series_width.'s', $series);
+    foreach my $field (@fields) {
+      my $field_width=length($field)+2;
+      my $field_format='%'.$field_width.'s';
+      my $value=$in->{$series}->{$field} // 0;
+      $sum->{$field}=$sum->{$field}+$value;
+      printf($field_format, $value);
+    }
+    print "\n";
+  }
+  ## sums
+  printf('%-'.$series_width.'s',"\x{03a3}");
+  foreach my $field (@fields) {
+    my $field_width=length($field)+2;
+    my $field_format='%'.$field_width.'s';
+    printf($field_format,$sum->{$field});
+  }
+  print "\n";
+}
+
+###
+sub is_complete_for_field {
+  my $field=shift;
+  my $count_series=0;
+  my $count_defined=0;
+  foreach my $series (keys %{$t}) {
+    $count_series++;
+    if(defined($t->{$series}->{$field})) {
+      $count_defined++;
+    }
+  }
+  ## say it's complete if more than 50% done
+  if($count_defined / $count_series > .25) {
+    return 1;
+  }
+  return 0;
+}
+###
+
+if($opt_c) {
+  &calculate();
+}
+elsif($opt_s) {
+  &show();
+}
+else {
+  &calculate();
+  &show();
+}
