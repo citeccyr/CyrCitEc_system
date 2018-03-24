@@ -13,7 +13,16 @@
       </xsl:with-param>
       <xsl:with-param name="extra_head"/>
       <xsl:with-param name="css_data">
-	<xsl:text>th { font-weight: normal; font-style: italics;}</xsl:text>
+	<style type="text/css">
+	  <xsl:text>th { </xsl:text>
+	  <xsl:text>font-weight: normal;  </xsl:text>
+	  <xsl:text>text-align:  left;  </xsl:text>
+	  <xsl:text>font-style:  italics; </xsl:text>
+	  <xsl:text>}&#10;</xsl:text>
+	  <xsl:text>td { </xsl:text>
+	  <xsl:text>text-align:  right;  </xsl:text>
+	  <xsl:text>}&#10;</xsl:text>
+	</style>
       </xsl:with-param>
     </xsl:call-template>
   </xsl:template>
