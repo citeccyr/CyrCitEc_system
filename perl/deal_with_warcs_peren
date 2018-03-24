@@ -7,7 +7,7 @@ use Cidig::Peren;
 
 my $p=Cidig::Peren->new({'input'=>'warc',
 			 'json_only'=>1,
-			 'verbose'=>'0'});
+			 'verbose'=>'1'});
 #$p->deal_with_warcs({'only_file'=>'rnp/ppaper/nvg155.warc'});
 $p->deal_with_warcs();
 
