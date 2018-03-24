@@ -15,6 +15,7 @@ use Cidig::Peren;
 use Cidig::Peren::Warcs;
 use Warc::File;
 
+
 my $dirs=$Cec::Paths::dirs;
 my $files=$Cec::Paths::files;
 
@@ -28,7 +29,6 @@ my $tmp_file=$p->prep_file_list('reci.xml');
 
 my $total_files=`grep -c ^ $tmp_file`;
 chomp $total_files;
-
 
 sub is_most_recent {
   my $file=shift;
@@ -52,7 +52,6 @@ sub is_most_recent {
   closedir $dh;
   return 1;
 }
-
 
 my $count_done=0;
 while($peren_dir=`/usr/bin/shuf -n 1 $tmp_file`) {
