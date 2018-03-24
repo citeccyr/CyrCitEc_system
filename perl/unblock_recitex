@@ -1,0 +1,30 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use Proc::ProcessTable;
+
+my $time=time();
+
+my $p = new Proc::ProcessTable( 'cache_ttys' => 1 );
+my $t = new Proc::ProcessTable;
+foreach $p ( @{$t->table} ) {
+  my $pid=$p->pid;
+  my $cmd=$p->cmndline;
+  if(not $cmd=~m|recitex\.pl|) {
+    next;
+  }
+  if(not $cmd=~m|^/usr/bin/perl|) {
+    next;
+  }
+  ## don't kill you being edited
+  if($cmd=~m|unblock|) {
+    next;
+  }
+  my $start=$p->start;
+  if($time-$start > 580) {
+    print "I kill '$cmd'\n";
+    system("kill -9 $pid > /dev/null 2> /dev/null");
+  }
+}
