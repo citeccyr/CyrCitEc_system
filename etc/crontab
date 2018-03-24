@@ -1,10 +1,20 @@
 SHELL=/bin/bash
 PERL5LIB=/home/cec/lib/perl:/home/cec/git/ParsCit/lib:/home/cec/usr/share/perl
 
+## general harvest on a random base
 29 * * * * ~/perl/spz_to_lafka 100 > ~/var/log/spz2l.log 2> ~/var/log/spz2l.err ;
+
+## bada-based harvest, eight days ago
+59 13 * * * ~/perl/spz_to_lafka -a 9
+
+## bada-based harvest, yesterday
+59 01 * * * ~/perl/spz_to_lafka -a 1
 
 ##
 10 0 * * * ~/bin/daily_update
 
-## alse fires up bada indexing
+## also fires up bada indexing
 04 07,19 * * *  ~/bin/get_vicwork
+
+## kill old recitex
+*/10 * * * * ~/perl/unblock_recitex
