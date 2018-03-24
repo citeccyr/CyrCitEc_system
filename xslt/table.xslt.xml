@@ -1,0 +1,141 @@
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns="http://www.w3.org/1999/xhtml"
+                exclude-result-prefixes="#default">
+  <xsl:include href="page.xslt.xml"/>
+  <xsl:template match="/">
+    <xsl:call-template name="page">
+      <xsl:with-param name="title">
+	<xsl:text>results table</xsl:text>
+      </xsl:with-param>
+      <xsl:with-param name="body">
+	<xsl:call-template name="table"/>
+      </xsl:with-param>
+      <xsl:with-param name="extra_head"/>
+      <xsl:with-param name="css_data">
+	<xsl:text>th { font-weight: normal; font-style: italics;}</xsl:text>
+      </xsl:with-param>
+    </xsl:call-template>
+  </xsl:template>
+  <xsl:template name="table">
+    <table>
+      <!-- ## header row -->
+      <tr>
+	<th>series</th>
+	<th class="records">records</th>
+	<th class="has_futli">with futli</th>
+	<th class="warcs">with WARCs</th>
+	<th class="pdf_warcs">with PDF WARCs</th>
+	<th class="json">with JSON</th>
+	<th class="ints">with intrefs</th>
+	<th class="refs">with refs</th>
+	<th class="cits">with cits</th>
+	<th class="cint">&#x03a3; intrefs</th>
+	<th class="cref">&#x03a3; refs</th>
+	<th class="ccit">&#x03a3; cits</th>
+      </tr>
+      <xsl:for-each select="/table/series">
+	<xsl:text>&#10;</xsl:text>
+	<tr>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+	  <th>
+	    <xsl:value-of select="@id"/>
+	  </th>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+	  <td class="records">
+	    <xsl:value-of select="./records"/>
+	  </td>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+          <td class="has_futli">
+	    <xsl:value-of select="./has_futli"/>
+	  </td>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+          <td class="warcs">
+	    <xsl:value-of select="./warcs"/>
+	  </td>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+          <td class="pdf_warcs">
+	    <xsl:value-of select="./pdf_warcs"/>
+	  </td>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+          <td class="json">
+	    <xsl:value-of select="./json"/>
+	  </td>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+          <td class="ints">
+	    <xsl:value-of select="./ints"/>
+	  </td>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+          <td class="refs">
+	    <xsl:value-of select="./refs"/>
+	  </td>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+          <td class="cits">
+	    <xsl:value-of select="./cits"/>
+	  </td>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+          <td class="cint">
+	    <xsl:value-of select="./cint"/>
+	  </td>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+          <td class="cref">
+	    <xsl:value-of select="./cref"/>
+	  </td>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+          <td class="ccit">
+	    <xsl:value-of select="./ccit"/>
+	  </td>
+          <xsl:text>&#10;</xsl:text>
+	</tr>
+        <xsl:text>&#10;</xsl:text>
+      </xsl:for-each>
+      <tr>
+	<th>&#x03a3;</th>
+        <xsl:text>&#10;</xsl:text>
+	<td class="records">
+	  <xsl:value-of select="sum(//records)"/>
+	</td>
+        <xsl:text>&#10;</xsl:text>
+	<td class="has_futli">
+	  <xsl:value-of select="sum(//has_futli)"/>
+	</td>
+        <xsl:text>&#10;</xsl:text>
+	<td class="warcs">
+	  <xsl:value-of select="sum(//warcs)"/>
+	</td>
+        <xsl:text>&#10;</xsl:text>
+	<td class="pdf_warcs">
+	  <xsl:value-of select="sum(//pdf_warcs)"/>
+	</td>
+        <xsl:text>&#10;</xsl:text>
+	<td class="json">
+	  <xsl:value-of select="sum(//json)"/>
+	</td>
+        <xsl:text>&#10;</xsl:text>
+	<td class="ints">
+	  <xsl:value-of select="sum(//ints)"/>
+	</td>
+        <xsl:text>&#10;</xsl:text>
+	<td class="refs">
+	  <xsl:value-of select="sum(//refs)"/>
+	</td>
+        <xsl:text>&#10;</xsl:text>
+	<td class="cits">
+	  <xsl:value-of select="sum(//cits)"/>
+	</td>
+        <xsl:text>&#10;</xsl:text>
+	<td class="cint">
+	  <xsl:value-of select="sum(//cint)"/>
+	</td>
+        <xsl:text>&#10;</xsl:text>
+	<td class="cref">
+	  <xsl:value-of select="sum(//cref)"/>
+	</td>
+        <xsl:text>&#10;</xsl:text>
+	<td class="ccit">
+	  <xsl:value-of select="sum(//ccit)"/>
+	</td>
+      </tr>
+    </table>
+  </xsl:template>
+</xsl:stylesheet>
