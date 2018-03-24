@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<stylesheet version="1.0"
+	    xmlns="http://www.w3.org/1999/XSL/Transform">
+  <output encoding="utf-8"
+          method="text"/>
+  <template match="text()"/>
+  <template match="//Change">
+    <value-of select="."/>
+  </template>
+  <template match="//attr[@id='change-date']">
+    <value-of select="."/>
+  </template>
+</stylesheet>
+
