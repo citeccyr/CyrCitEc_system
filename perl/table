@@ -99,9 +99,9 @@ $f->{'reci'} = sub {
   my @founds=`find $peren_dir -type f -name '*.reci.xml'`;
   foreach my $found (shuffle @founds) {
     chomp $found;
-    my $refc=&Cec::Xslt::transform($found,'refc') // next;
-    my $intc=&Cec::Xslt::transform($found,'intc');
-    my $citc=&Cec::Xslt::transform($found,'citc');
+    my $refc=&Cec::Xslt::transform($found,'refc')->textContent() // next;
+    my $intc=&Cec::Xslt::transform($found,'intc')->textContent();
+    my $citc=&Cec::Xslt::transform($found,'citc')->textContent();
     my $dir=dirname($found);
     $dir=~s|$peren_dir/*|| or die;
     my $handle=lc(&{$Cidig::Ris::file2id->{'spz'}}($dir));
