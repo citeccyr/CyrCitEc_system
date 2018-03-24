@@ -9,6 +9,8 @@ use File::Path;
 use File::Slurper;
 use List::Util qw(shuffle);
 
+use Cec::Paths;
+
 my $home_dir=$ENV{'HOME'};
 my $crontab_file="$home_dir/etc/crontab";
 my $self_file="$home_dir/perl/export_to_git";
@@ -39,6 +41,30 @@ foreach my $perl_file (keys %{$to_parse->{'perl'}}) {
   &parse_perl_file($perl_file);
 }
 
+my $xslt_dir=$Cec::Paths::dirs->{'xslt'};
+foreach my $xslt_bana (`ls $xslt_dir`) {
+  chomp $xslt_bana;
+  if(not $xslt_bana=~m|\.xslt\.xml$|) {
+    next;
+  }
+  my $xslt_fufi="$xslt_dir/$xslt_bana";
+  $to_repo->{$xslt_fufi}=1;
+}
+
+foreach my $in_file (keys %{$to_repo}) {
+  my $out_file=$in_file;
+  $out_file=~s|$home_dir|$home_dir/git|;
+  my $dir=dirname($out_file);
+  if(not -d $dir) {
+    mkpath($dir);
+  }
+  system("rsync -va $in_file $out_file");
+  my $ga_file=$in_file;
+  $ga_file=~s|$home_dir/||;
+  system("cd $home_dir/git ; git add $ga_file");
+  system("cd $home_dir/git ; git commit -a -m 'automated commit by export_to_git'");
+}
+
 sub parse_perl_file {
   my $perl_file=shift;
   ## it does not see the ~
@@ -59,20 +85,6 @@ sub parse_perl_file {
     $to_repo=&look_for_perl_library($line,$to_repo,$local_libs);
   }
   $to_repo->{$perl_file}=1;
-}
-
-foreach my $in_file (keys %{$to_repo}) {
-  my $out_file=$in_file;
-  $out_file=~s|$home_dir|$home_dir/git|;
-  my $dir=dirname($out_file);
-  if(not -d $dir) {
-    mkpath($dir);
-  }
-  system("rsync -va $in_file $out_file");
-  my $ga_file=$in_file;
-  $ga_file=~s|$home_dir/||;
-  system("cd $home_dir/git ; git add $ga_file");
-  system("cd $home_dir/git ; git commit -a -m 'automated commit by export_to_git'");
 }
 
 sub look_for_perl_library {
@@ -105,7 +117,7 @@ sub use_to_file {
   my $use=shift;
   ## use with qw statement
   $use=~s|\s*qw.*|;|;
-  print $use;
+  #print $use;
   my $file=$use;
   $file=~s|use\s+||;
   $file=~s|::|/|g;
