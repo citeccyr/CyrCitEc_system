@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsl:stylesheet version="1.0"
+		xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+		xmlns:sphinx="_">
+  <xsl:output encoding="utf-8"
+              omit-xml-declaration="yes"
+              method="xml"/>
+  <xsl:param name="handle"/>
+  <xsl:template match="text()"/>
+  <xsl:template match="/root">
+    <xsl:element name="sphinx:document">
+      <xsl:attribute name="id">
+	<xsl:value-of select="$handle"/>
+      </xsl:attribute>
+      <xsl:text>&#10;</xsl:text>
+      <xsl:apply-templates/>
+    </xsl:element>
+  </xsl:template>
+  <xsl:template match="Title">
+    <title>
+      <xsl:value-of select="normalize-space(.)"/>    
+    </title>
+    <xsl:text>&#10;</xsl:text>
+  </xsl:template>
+  <xsl:template match="Year">
+    <year>
+      <xsl:value-of select="normalize-space(.)"/>    
+    </year>
+    <xsl:text>&#10;</xsl:text>
+  </xsl:template>
+  <xsl:template match="Author">
+    <xsl:variable name="name">
+      <xsl:value-of select="./Name"/>
+    </xsl:variable>
+    <author>
+      <xsl:value-of select="normalize-space($name)"/>    
+    </author>
+    <xsl:text>&#10;</xsl:text>
+  </xsl:template>
+</xsl:stylesheet>
+   
