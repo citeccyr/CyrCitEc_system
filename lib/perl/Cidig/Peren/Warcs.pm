@@ -218,4 +218,24 @@ sub warc2text {
   #}
 }
 
+sub peren_dir_from_warc_dir {
+  my $p=shift;
+  my $warc=shift;
+  if(not $warc) {
+    confess "I need a warc file name here.";
+  }
+  if(not -f $warc) {
+    confess "I need a warc_file here, but you gave me '$warc'.";
+  }
+  my $warc_dir=$p->{'warc_dir'} // confess "I need this defined.";
+  my $peren_dir=$p->{'peren_dir'}  // confess "I need this defined.";
+  ## remove ".warc'
+  $warc=substr($warc,0,length($warc)-5);
+  ## remove warcd_dir
+  $warc=substr($warc,length($warc_dir)+1);
+  $peren_dir="$peren_dir/$warc";
+  return $peren_dir;
+}
+
+
 1;
