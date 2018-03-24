@@ -65,8 +65,8 @@ $input2id->{'spz'}=sub {
   $id=~s|/|:|;
   $id=~s|/|:|;
   #my $id1=$id;
+  $id=~s|^[^:]{3}:|RePEc:gai:|;
   $id=~s|^neicon:|spz:neicon:|;
-  $id=~s|^gai:|RePEc:gai:|;
   $id=~s|^rnp:|RePEc:rnp:|;
   #die "$id1 $id";
   ## take the part until the /
