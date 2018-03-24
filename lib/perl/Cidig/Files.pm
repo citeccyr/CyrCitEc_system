@@ -17,7 +17,7 @@ use List::Util qw(shuffle);
 use JSON::XS;
 
 ## globals needed for finding most recent files
-my $last_time=time();
+my $last_time=0;
 my $last_file='';
 
 sub load_from_directory {
@@ -56,7 +56,7 @@ sub load_from_directory {
     confess "I don't have the directory $dir.";
   }
   &find($find_files, $dir);
-  ## shuffling the files 
+  ## shuffling the files
   @{$out}=shuffle(@{$out});
   return $out;
 }
@@ -149,16 +149,16 @@ sub does_file_need_renewal {
   if($verbose) {
     print Dumper @others;
   }
-  foreach my $file (@others) {
+  foreach my $other_file (@others) {
     if($verbose) {
       print "considering $file as renewal target\n";
     }
-    if(not $file) {
-      confess "I don't have the file $file";
+    if(not $other_file) {
+      confess "I don't have the file $other_file";
     }
-    if(-d $file) { 
+    if(-d $other_file) {
       ## directory case, not treated recursively
-      my $dirname=$file;
+      my $dirname=$other_file;
       opendir( my $dir, $dirname ) or die "Error: can't open dir $dirname";
       my $file;
       while ($file = readdir $dir ) {
@@ -174,25 +174,24 @@ sub does_file_need_renewal {
           return 1;
         }
       }
-      ## finished with this
-      next;
-      if(not -f $file) {
-	die "I can not find the file '$file'";
-      }
-      if($verbose) {
-	print "time on file $file is ", -M $file, "\n";
-      }
-      if(-M $file < $target_time) {
-	if($verbose) {
-	  print " but $file is newer, renewal required\n";
-	}
-	return 1;
-      }
+    }
+    ## finished with this
+    #next;
+    if(not -f $other_file) {
+      die "I can not find the file '$other_file'";
     }
     if($verbose) {
-      print " no reed to renew\n";
+      print "time on file $file is ", -M $other_file, "\n";
     }
-    return 0;
+    if(-M $other_file < $target_time) {
+      if($verbose) {
+	print " but $other_file is newer, renewal required\n";
+      }
+      return 1;
+    }
+  }
+  if($verbose) {
+    print " no reed to renew\n";
   }
 }
 ## dumps json
@@ -236,7 +235,6 @@ sub find_most_recent_time_in_directory {
       my $mtime=&mtime($full_file);
       if($last_time < $mtime) {
         $last_time=$mtime;
-	#        $last_file=$full_file;
         next;
       }
     }
