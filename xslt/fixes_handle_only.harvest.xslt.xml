@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<stylesheet version="1.0"
+            xmlns="http://www.w3.org/1999/XSL/Transform">
+  <output encoding="utf-8"
+          omit-xml-declaration="yes"
+          method="text"
+          media-type="text/plain"/>
+  <template match="text()"/>
+  <variable name="source"
+	    select="normalize-space(/document/source/@handle)"/>
+  <variable name="cut_0"
+	    select="$source"/>
+  <variable name="cut_1"
+	    select="substring-after($cut_0,':')"/>
+  <variable name="cut_2"
+	    select="substring-after($cut_1,':')"/>
+  <variable name="cut_3"
+	    select="substring-after($cut_2,':')"/>
+  <variable name="cut_4"
+	    select="substring-after($cut_3,'_')"/>
+  <variable name="part_1"
+	    select="substring-before($cut_0,':')"/>
+  <variable name="part_2"
+	    select="substring-before($cut_1,':')"/>
+  <variable name="part_3"
+	    select="substring-before($cut_2,':')"/>
+  <variable name="part_4"
+	    select="substring-before($cut_3,'_')"/>
+  <template match="/">
+    <for-each select="//intextref">
+      <variable name="prefix"
+		select="./Prefix"/>
+      <variable name="suffix"
+		select="./Suffix"/>
+      <text>citing:</text>
+      <value-of select="$source"/>
+      <text>&#32;</text>
+      <value-of select="normalize-space(translate($prefix,' ',' '))"/>
+      <text>&#32;</text>
+      <value-of select="normalize-space(translate($suffix,' ',' '))"/>
+      <text>&#10;</text>
+    </for-each>
+  </template>
+</stylesheet>

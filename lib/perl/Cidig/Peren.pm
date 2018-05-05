@@ -88,13 +88,17 @@ sub run {
   my $com=shift // confess "I need a command here";
   my $in=shift // confess "I need an 'in' part here.";
   my $out=shift // confess "I need an 'out' part here.";
-
 }
+
 sub apply {
   my $p=shift;
   my $com=shift // confess "I need a command here";
   my $in=shift // confess "I need an 'in' part here.";
   my $out=shift // confess "I need an 'out' part here.";
+  my $additional_check_files=shift // [];
+  if(not ref($additional_check_files) eq 'ARRAY') {
+    confess "I need an array here.";
+  }
   ## an optional coverter to add an argument
   my $arg_convert = shift // '';
   ## the script part
@@ -109,18 +113,37 @@ sub apply {
     confess "I don't see your script '$script'.";
   }
   $|=1;
-  print "I load file ... ";
+  #print "I load file ... ";
   my $files=$p->load_files('');
-  print " done\n";
-  foreach my $file (@$files) {
+  #print " done\n";
+  ## files to check for renewal against
+  my @extras;
+  ## the script itself
+  push(@extras,$script);
+  ## and members of the array pushed by the caller
+  foreach my $extra (@$additional_check_files) {
+    push(@extras,$extra);
+  }
+  foreach my $file (shuffle @$files) {
     if(not $file=~m|$in|) {
       next;
     }
     my $out_file=$file;
     $out_file=~s|$in|$out|;
     if(not $p->{'force'} and
-       not &Cidig::Files::does_file_need_renewal($out_file,$file,$script)) {
+       not &Cidig::Files::does_file_need_renewal($out_file,$file,@extras)) {
+      #print "I skip $out_file\n";
+      #my $ls=`ls -l $out_file`;
+      #print "I skip $ls";
       next;
+    }
+    ## do only a count
+    if($p->{'count_only'}) {
+      $p->{'count_to_do'}++;
+      next;
+    }
+    if($p->{'check_if_to_do'}) {
+      return 1;
     }
     my $err="$out_file.err";
     my $s;
@@ -134,7 +157,12 @@ sub apply {
     if($p->{'verbose'}) {
       print "I run '$s' ...";
     }
-    system($s);
+    eval {
+      system($s);
+    };
+    if($@) {
+      warn $@;
+    }
     if(not -z $err) {
       my $err_text=&File::Slurper::read_text($err);
       warn "\n\nrecitex ended with an error\n '$err_text'.";
@@ -152,6 +180,10 @@ sub apply {
 	confess $out;
       }
     }
+  }
+  ## nothing more to do
+  if($p->{'check_if_to_do'}) {
+    return 0;
   }
 }
 

@@ -63,9 +63,11 @@ foreach my $in_file (keys %{$to_repo}) {
   my $ga_file=$in_file;
   $ga_file=~s|$home_dir/||;
   system("cd $home_dir/git ; git add $ga_file");
-  system("cd $home_dir/git ; git commit -a -m 'automated commit by export_to_git'");
-  system("cd $home_dir/git ; git push -u origin master");
 }
+
+## commit and upload
+system("cd $home_dir/git ; git commit -a -m 'automated commit by export_to_git'");
+system("cd $home_dir/git ; git push -u origin master");
 
 sub parse_perl_file {
   my $perl_file=shift;

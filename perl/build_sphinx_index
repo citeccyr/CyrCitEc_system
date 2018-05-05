@@ -1,0 +1,25 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use utf8;
+
+use DB_File ;
+
+use Cec::Paths;
+use Cidig::Files;
+
+my $files=$Cec::Paths::files;
+my $dirs=$Cec::Paths::dirs;
+my $sph_in=$files->{'handle_db'};
+my $index_dir=$dirs->{'index'};
+
+
+my $oldest_index_file=Cidig::Files::find_oldest_file_in_directory($index_dir);
+if(&Cidig::Files::does_file_need_renewal($oldest_index_file,$sph_in)) {
+  ## nothing to do
+  exit;
+}
+
+system("sudo indexer --all --rotate > /tmp/indexer.log 2> /tmp/indexer.err");
+system("sudo /etc/init.d/sphinxsearch restart > /tmp/restart_sphinx.log 2> /tmp/restart_sphinx.err");

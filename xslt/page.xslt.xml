@@ -28,7 +28,7 @@
         <xsl:text>&#10;</xsl:text>
         <xsl:copy-of select="$css_data"/>
         <xsl:text>&#10;</xsl:text>
-        <xsl:copy-of select="extra_head"/>
+        <xsl:copy-of select="$extra_head"/>
       </head>
       <xsl:text>&#10;</xsl:text>
       <body>

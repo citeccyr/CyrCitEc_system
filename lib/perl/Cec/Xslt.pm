@@ -45,10 +45,20 @@ sub transform {
       return undef;
     }
   }
-  if(not $x->{$name}) {
-    $x->{$name}=&get_sheet($name);
+  my $result;
+  ## if name is just a name
+  if(not ref($name)) {
+    if(not $x->{$name}) {
+      $x->{$name}=&get_sheet($name);
+    }
+    $result=$x->{$name}->transform($in);
   }
-  my $result=$x->{$name}->transform($in);
+  elsif(ref($name) eq 'XML::LibXSLT::StylesheetWrapper') {
+    $result=$name->transform($in);
+  }
+  else {
+    confess "I don't know about" . ref($name);
+  }
   #return $x->{$name}->output_as_bytes($result);
   return $result;
 }

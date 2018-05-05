@@ -4,6 +4,8 @@ use strict;
 use warnings;
 
 use Carp qw(confess);
+use Date::Format;
+use Date::Parse;
 use Data::Dumper;
 use File::Basename;
 use URI::Escape;
@@ -12,6 +14,7 @@ use XML::LibXML;
 use Cec::Paths;
 use Cec::Warcs;
 use Cidig::Peren;
+use Cidig::Files;
 use Cidig::Peren::Warcs;
 use Warc::File;
 
@@ -22,6 +25,9 @@ my $files=$Cec::Paths::files;
 my $warc_dir=$dirs->{'warc'};
 my $peren_dir=$dirs->{'peren'};
 #my $tmp_file=&prep_file_list();
+
+## the file name to be used
+my $canonical_file_name='summary.xml';
 
 my $p=Cidig::Peren->new({'verbose'=>'1',
 			 'force'=>0});
@@ -59,7 +65,9 @@ while($peren_dir=`/usr/bin/shuf -n 1 $tmp_file`) {
     last;
   }
   chomp $peren_dir;
-  my $out_file="$peren_dir/summary.xml";
+  my $out_doc=XML::LibXML::Document->new('1.0','UTF-8');
+  my $root_ele=&build_root_element($peren_dir,$out_doc);
+  my $out_file="$peren_dir/$canonical_file_name";
   if(-f $out_file and not -z $out_file and &is_most_recent($out_file)) {
     # print "I skip the recent out_file $out_file\n";
     next;
@@ -105,9 +113,9 @@ while($peren_dir=`/usr/bin/shuf -n 1 $tmp_file`) {
   if(not -f $warc_file) {
     confess "I don't see the warc_file '$warc_file'";
   }
-  my $out_doc=XML::LibXML::Document->new('1.0','UTF-8');
   my $futlis_ele=&make_futlis($futlis,$reci_docs,$out_doc,$reci_files,$handle);
-  $out_doc->setDocumentElement($futlis_ele);
+  $root_ele->appendChild($futlis_ele);
+  $out_doc->setDocumentElement($root_ele);
   #print "I print to $out_file  ... ";
   ## on success status is undefined
   my $status=eval {
@@ -116,6 +124,65 @@ while($peren_dir=`/usr/bin/shuf -n 1 $tmp_file`) {
   if(defined($status)) {
     print "I wrote $out_file, with status $status.\n";
   }
+}
+
+sub build_root_element {
+  my $peren_dir=shift;
+  my $doc=shift;
+  my $oldest_file=&Cidig::Files::find_oldest_file_in_directory($peren_dir) // '';
+  my $oldest_time=time;
+  if($oldest_file) {
+    $oldest_time=&Cidig::Files::mtime($oldest_file)
+  }
+  ## read the created time on the existing file
+  my $old_created_time=&read_old_created($peren_dir);
+  if($old_created_time and $old_created_time < $oldest_time) {
+    $oldest_time=$old_created_time;
+  }
+  my $root_ele=$doc->createElement('document');
+  $root_ele->setAttribute('type','citmap');
+  $root_ele->setAttribute('provider','RANEPA, CitEcCyr project');
+  my $updated=&vic_date(time);
+  my $vic_oldest=&vic_date($oldest_time);
+  $root_ele->setAttribute('updated',$updated);
+  $root_ele->setAttribute('created',$vic_oldest);
+  return $root_ele;
+}
+
+## reade the created time of the old file
+sub read_old_created {
+  my $peren_dir=shift;
+  my $old_file="$peren_dir/$canonical_file_name";
+  if(not -f $old_file) {
+    return 0;
+  }
+  my $old_doc;
+  eval {
+    $old_doc=XML::LibXML->load_xml(location=>$old_file);
+  };
+  if(not $old_doc) {
+    return 0;
+  }
+  my $root_ele=$old_doc->documentElement();
+  my $created=$root_ele->getAttribute('created');
+  if(not $created) {
+    return 0;
+  }
+  my $time = Date::Parse::str2time($created);
+  if(not $time) {
+    warn "I could not parse the created date '$created'.";
+    return 0;
+  }
+  # print "I found the old time as $time\n";
+  return $time;
+}
+
+sub vic_date {
+  my $time=shift // confess "I need a time here.";
+  my $base_date=Date::Format::time2str("%Y-%m-%dT%T", $time);
+  my $silly='.000000+00:00';
+  my $date=$base_date.$silly;
+  return $date;
 }
 
 sub make_futlis {
@@ -173,14 +240,13 @@ sub make_futlis {
 sub peren_loc_to_rsync {
   my $in=shift // confess "I need some input here.";
   my $out=$in;
-  $out=~s|.*/peren|rsync://evstu.openlib.org/peren|;
+  $out=~s|.*/peren|rsync://citru.repec.org/peren|;
   return $out;
 }
 
-
 sub warc_to_rsync_url {
   my $file=shift;
-  my $base='rsync://evstu.openlib.org/warc';
+  my $base='rsync://citru.repec.org/warc';
   my $warc_dir=$dirs->{'warc'};
   my $url=$base.substr($file,length($warc_dir));
   return $url;

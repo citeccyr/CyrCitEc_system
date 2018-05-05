@@ -1,0 +1,134 @@
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns="http://www.w3.org/1999/xhtml"
+                exclude-result-prefixes="#default">
+    <xsl:variable name="explain_table">
+      <table id="explain">
+	<tr>
+	  <td>
+	    <xsl:text>[1]</xsl:text>
+	  </td>
+	  <td>
+	    <xsl:text>metadata records available</xsl:text>
+	  </td>
+	</tr>
+	<xsl:text>&#10;</xsl:text>
+	<tr>
+	  <td>
+	    <xsl:text>[2]</xsl:text>
+	  </td>
+	  <td>
+	    <xsl:text>records with links to full text links (“futlis”)</xsl:text>
+	  </td>
+	</tr>
+	<xsl:text>&#10;</xsl:text>
+	<tr>
+	  <td>
+	    <xsl:text>[3]</xsl:text>
+	  </td>
+	  <td>
+	    <xsl:text>records with web archives</xsl:text>
+	  </td>
+	</tr>
+	<xsl:text>&#10;</xsl:text>
+	<tr>
+	  <td>
+	    <xsl:text>[4]</xsl:text>
+	  </td>
+	  <td>
+	    <xsl:text>web archives that contain at least one PDF file</xsl:text>
+	  </td>
+	</tr>
+	<xsl:text>&#10;</xsl:text>
+	<tr>
+	  <td>
+	    <xsl:text>[5]</xsl:text>
+	  </td>
+	  <td>
+	    <xsl:text>PDF files that are converted to JSON</xsl:text>
+	  </td>
+	</tr>
+	<xsl:text>&#10;</xsl:text>
+	<tr>
+	  <td>
+	    <xsl:text>[6]</xsl:text>
+	  </td>
+	  <td>
+	    <xsl:text>reference sections found in the JSON files</xsl:text>
+	  </td>
+	</tr>
+	<xsl:text>&#10;</xsl:text>
+	<tr>
+	  <td>
+	  <xsl:text>[7]</xsl:text>
+	</td>
+	<td>
+	  <xsl:text>JSON with some intext references</xsl:text>
+	</td>
+      </tr>
+      <xsl:text>&#10;</xsl:text>
+      <tr>
+	<td>
+	  <xsl:text>[8]</xsl:text>
+	</td>
+	<td>
+	  <xsl:text>JSON files with at least one citation</xsl:text>
+	  </td>
+      </tr>
+      <xsl:text>&#10;</xsl:text>
+      <tr>
+	<td>
+	  <xsl:text>[9]</xsl:text>
+	</td>
+	<td>
+	  <xsl:text>JSON files where some intext references are missing</xsl:text>
+	</td>
+      </tr>
+      <xsl:text>&#10;</xsl:text>
+      <tr>
+	<td>
+	  <xsl:text>[a]</xsl:text>
+	</td>
+	<td>
+	  <xsl:text>count of all references</xsl:text>
+	</td>
+      </tr>
+      <xsl:text>&#10;</xsl:text>
+      <tr>
+	<td>
+	  <xsl:text>[b]</xsl:text>
+	</td>
+	<td>
+	  <xsl:text>count of all citation contexts</xsl:text>
+	</td>
+      </tr>
+      <xsl:text>&#10;</xsl:text>
+      <tr>
+	<td>
+	  <xsl:text>[c]</xsl:text>
+	</td>
+	<td>
+	  <xsl:text>count of in-text references</xsl:text>
+	</td>
+      </tr>
+      <xsl:text>&#10;</xsl:text>
+      <tr>
+	<td>
+	  <xsl:text>[d]</xsl:text>
+	</td>
+	<td>
+	  <xsl:text>count of total citations</xsl:text>
+	</td>
+      </tr>
+      <xsl:text>&#10;</xsl:text>
+      <tr>
+	<td>
+	  <xsl:text>[e]</xsl:text>
+	</td>
+	<td>
+	  <xsl:text>count of references without in-text references</xsl:text>
+	</td>
+      </tr>
+      </table>
+    </xsl:variable>
+</xsl:stylesheet>

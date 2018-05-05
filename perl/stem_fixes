@@ -1,0 +1,40 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use Getopt::Std;
+use Cec::Word2vec::Base;
+use Cec::Paths;
+
+my %o;
+getopts('f',\%o);
+my $force_renew=$o{'f'};
+
+my $dirs=$Cec::Paths::dirs;
+my $files=$Cec::Paths::files;
+
+my $exec=$dirs->{'python'}.'/stem';
+if(not -f $exec) {
+  die "I don't see your file $exec";
+}
+
+my $out_file=$files->{'stem_fixes'};
+my $raw_file=$files->{'raw_fixes'};
+if(not -f $raw_file) {
+  die "I don't see your raw_file $raw_file";
+}
+
+if(-z $out_file) {
+  unlink $out_file;
+}
+elsif(-f $out_file and (-M $out_file < -M $raw_file)) {
+  if(not $o{'f'}) {
+    print "I don't renew $out_file over $raw_file.\n";
+    exit;
+  }
+}
+
+my $s="$exec $raw_file > $out_file";
+print "$s\n";
+system($s);

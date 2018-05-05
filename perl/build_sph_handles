@@ -1,0 +1,31 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use utf8;
+
+use DB_File ;
+
+use Cec::Paths;
+use Cidig::Files;
+
+my $files=$Cec::Paths::files;
+my $panu_db_file=$files->{'handle_db'};
+my $panu_dump_file=$files->{'handle_dump'};
+
+if(not &Cidig::Files::does_file_need_renewal($panu_db_file,$panu_dump_file)) {
+  ## nothing to do
+  exit;
+}
+
+my %panu;
+tie %panu, "DB_File", $panu_db_file, O_RDWR|O_CREAT, 0666, $DB_HASH;
+open(F,"< $panu_dump_file");
+my $line;
+while($line=<F>) {
+  chomp $line;
+  $line=~m|(\d+)\s+(\S+)$| or die "I can't parse $line.";
+  $panu{$1}=$2;
+}
+
+untie %panu;

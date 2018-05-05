@@ -11,6 +11,8 @@ use Getopt::Std;
 use List::Util qw(shuffle);
 
 use Cec::Paths;
+use Cec::Common;
+use Cec::Dates;
 use Cec::Xslt;
 #use Cidig::Peren::Warcs;
 use Cidig::Ris;
@@ -34,6 +36,14 @@ my $files=$Cec::Paths::files;
 my $warc_dir=$dirs->{'warc'};
 my $input_dir=$dirs->{'input'};
 my $peren_dir=$dirs->{'peren'};
+
+## set outfile for calculations
+my $out_file=$files->{'table_results'};
+## store history
+my $today=&Cec::Dates::today;
+if(not &Cec::Common::isatty()) {
+  $out_file=$dirs->{'stats'}."/$today.json";
+}
 
 ## all fields
 my @fields=('records','has_futli','warcs','warcs','json','recitex','refs_found','intc','refc');
@@ -99,13 +109,15 @@ $f->{'reci'} = sub {
   my @founds=`find $peren_dir -type f -name '*.reci.xml'`;
   foreach my $found (shuffle @founds) {
     chomp $found;
-    my $refc=&Cec::Xslt::transform($found,'refc')->textContent() // next;
+    my $refc=&Cec::Xslt::transform($found,'refc')->textContent()// die;
     my $intc=&Cec::Xslt::transform($found,'intc')->textContent();
     my $citc=&Cec::Xslt::transform($found,'citc')->textContent();
+    my $mitc=&Cec::Xslt::transform($found,'mitc')->textContent();
+    my $ccon=&Cec::Xslt::transform($found,'ccon')->textContent();
     my $dir=dirname($found);
     $dir=~s|$peren_dir/*|| or die;
     my $handle=lc(&{$Cidig::Ris::file2id->{'spz'}}($dir));
-    my $series=&series($handle) // next;
+    my $series=&series($handle) // die;
     if($refc) {
       $t->{$series}->{'refs'}+=1;
       $t->{$series}->{'cref'}+=$refc;
@@ -114,9 +126,17 @@ $f->{'reci'} = sub {
       $t->{$series}->{'cits'}+=1;
       $t->{$series}->{'ccit'}+=$citc;
     }
+    if($ccon) {
+      $t->{$series}->{'cons'}+=1;
+      $t->{$series}->{'ccon'}+=$ccon;
+    }
     if($intc) {
       $t->{$series}->{'ints'}+=1;
       $t->{$series}->{'cint'}+=$intc;
+    }
+    if($mitc) {
+      $t->{$series}->{'mits'}+=1;
+      $t->{$series}->{'cmit'}+=$mitc;
     }
   }
 };
@@ -155,7 +175,7 @@ sub series {
 ## main function to calcalue
 sub calculate {
   if($opt_i) {
-    $t=&Lafka::Json::load($files->{'table_results'});
+    $t=&Lafka::Json::load($out_file);
   }
   #my @fields=('records','warcs','futlis','json','link','refc','intc')) {
   my @stacks=('records','has_futli','warcs','json','reci');
@@ -192,7 +212,7 @@ sub calculate {
 	print "I save \$t\n";
 	print Dumper $t;
       }
-      &Lafka::Json::save($t,$files->{'table_results'});
+      &Lafka::Json::save($t,$out_file);
     }
   }
 }
@@ -201,6 +221,7 @@ sub doc {
   my $in=shift;
   my $doc = XML::LibXML::Document->new('1.0','utf8');
   my $table_ele=$doc->createElement('table');
+  $table_ele->setAttribute('date',$today);
   foreach my $series (sort keys %$in) {
     my $series_ele=$doc->createElement('series');
     $series_ele->setAttribute('id',$series);
@@ -219,7 +240,7 @@ sub doc {
 }
 
 sub show {
-  my $in=&Lafka::Json::load($files->{'table_results'});
+  my $in=&Lafka::Json::load($out_file);
   my $doc=&doc($in);
   my $out=&Cec::Xslt::transform($doc,'table');
   if($opt_v) {

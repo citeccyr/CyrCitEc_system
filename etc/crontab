@@ -18,3 +18,12 @@ PERL5LIB=/home/cec/lib/perl:/home/cec/git/ParsCit/lib:/home/cec/usr/share/perl
 
 ## kill old recitex
 */10 * * * * ~/perl/unblock_recitex
+
+## test for historical data
+55 12 * * * ~/perl/table -c
+
+
+## test for historical data
+#12 07 * * * ~/perl/apply_recitex > arc.log 2> apc.err
+
+44 04 * * * rsync -qa  opt/peren/ --exclude '*.txt' --exclude '*.json' --exclude '*.err' --exclude '*.log' --exclude summary.xml  adnetec@iripa:opt/vic/.

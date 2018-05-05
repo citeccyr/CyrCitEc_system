@@ -256,17 +256,44 @@ sub find_most_recent_file_in_directory {
 	$last_file=$full_file;
       }
       my $mtime=&mtime($full_file);
-      if($last_time < $mtime) {
+      if($last_time > $mtime) {
         $last_time=$mtime;
 	$last_file=$full_file;
         next;
       }
     }
     if(-d $full_file) {
-      &find_most_recent_time_in_directory($full_file);
+      &find_most_recent_file_in_directory($full_file);
     }
   }
   return $last_file;
+}
+
+
+##
+sub find_oldest_file_in_directory {
+  my $directory=shift;
+  my $first_file;
+  my $first_time=time;
+  foreach my $file (`ls $directory`) {
+    chomp $file;
+    my $full_file="$directory/$file";
+    if(-f $full_file) {
+      if(not $first_file) {
+	$first_file=$full_file;
+      }
+      my $mtime=&mtime($full_file);
+      if($first_time < $mtime) {
+        $first_time=$mtime;
+	$first_file=$full_file;
+        next;
+      }
+    }
+    if(-d $full_file) {
+      &find_oldest_in_directory($full_file);
+    }
+  }
+  return $first_file;
 }
 
 1;

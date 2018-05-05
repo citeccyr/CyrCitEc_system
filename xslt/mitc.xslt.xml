@@ -7,6 +7,6 @@
           media-type="text/plain"/>
   <template match="text()"/>
   <template match="/">
-    <value-of select="count(//intextref//Reference)"/>
+    <value-of select="count(//linking/reference[not((../../intextrefs/intextref/Reference/text())= @num)])"/>
   </template>
 </stylesheet>

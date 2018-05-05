@@ -1,0 +1,69 @@
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns="http://www.w3.org/1999/xhtml"
+                exclude-result-prefixes="#default">
+  <xsl:variable name="sums_row">
+    <tr>
+      <th>&#x03a3;</th>
+      <th>
+	<xsl:value-of select="count(/table/series)"/>
+      </th>
+      <xsl:text>&#10;</xsl:text>
+      <td class="records">
+	<xsl:value-of select="sum(//records)"/>
+      </td>
+      <xsl:text>&#10;</xsl:text>
+      <td class="has_futli">
+	<xsl:value-of select="sum(//has_futli)"/>
+      </td>
+      <xsl:text>&#10;</xsl:text>
+      <td class="warcs">
+	<xsl:value-of select="sum(//warcs)"/>
+      </td>
+      <xsl:text>&#10;</xsl:text>
+      <td class="pdf_warcs">
+	<xsl:value-of select="sum(//pdf_warcs)"/>
+      </td>
+      <xsl:text>&#10;</xsl:text>
+      <td class="json">
+	<xsl:value-of select="sum(//json)"/>
+      </td>
+      <xsl:text>&#10;</xsl:text>
+      <td class="refs">
+	<xsl:value-of select="sum(//refs)"/>
+      </td>
+      <xsl:text>&#10;</xsl:text>
+      <td class="ints">
+	<xsl:value-of select="sum(//ints)"/>
+      </td>
+      <xsl:text>&#10;</xsl:text>
+      <td class="cits">
+	<xsl:value-of select="sum(//cits)"/>
+      </td>
+      <xsl:text>&#10;</xsl:text>
+      <td class="mits">
+	<xsl:value-of select="sum(//mits)"/>
+      </td>
+      <xsl:text>&#10;</xsl:text>
+      <td class="cref">
+	<xsl:value-of select="sum(//cref)"/>
+      </td>
+      <xsl:text>&#10;</xsl:text>
+      <td class="ccon">
+	<xsl:value-of select="sum(//ccon)"/>
+      </td>
+      <xsl:text>&#10;</xsl:text>
+      <td class="cint">
+	<xsl:value-of select="sum(//cint)"/>
+      </td>
+      <xsl:text>&#10;</xsl:text>
+      <td class="ccit">
+	<xsl:value-of select="sum(//ccit)"/>
+      </td>
+      <xsl:text>&#10;</xsl:text>
+      <td class="cmit">
+	<xsl:value-of select="sum(//cmit)"/>
+      </td>
+    </tr>
+  </xsl:variable>
+</xsl:stylesheet>

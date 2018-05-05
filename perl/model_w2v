@@ -1,0 +1,30 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+#use Cec::Word2vec::Base;
+use Cec::Word2vec::Models;
+use Getopt::Std;
+
+my %o;
+## build_only, train
+getopts('bt',\%o);
+my $build_only=$o{'b'};
+my $train_only=$o{'t'};
+my $name=$ARGV[0] // '';
+if(not $name) {
+  print "I need a tranformer name here.\n";
+  exit;
+}
+
+## in case it was a file;
+$name=~s|\.xslt\.xml$||;
+
+if(not $train_only) {
+  &Cec::Word2vec::Models::make_stem_from_raw($name,'1_nopos');
+}
+
+if(not $build_only) {
+  &Cec::Word2vec::Models::train($name,'stem');
+}
