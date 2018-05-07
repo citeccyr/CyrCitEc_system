@@ -82,8 +82,8 @@ foreach my $in_file (keys %{$to_repo}) {
 
 
 &import_changes('/doc/');
-system("cd $home_dir/git ; git commit -a -m 'automated commit by export_to_git'");
-system("cd $home_dir/git ; git push -u origin master");
+###system("cd $home_dir/git ; git commit -a -m 'automated commit by export_to_git'");
+###system("cd $home_dir/git ; git push -u origin master");
 
 sub import_changes {
   my $regex=shift // confess "I need a regex here";
