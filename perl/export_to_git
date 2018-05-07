@@ -63,17 +63,6 @@ foreach my $doc_bana (`ls $doc_dir`) {
   $to_repo->{$doc_fufi}=1;
 }
 
-## I add all the XSLT files. I will clean them manually
-my $xslt_dir=$Cec::Paths::dirs->{'xslt'};
-foreach my $xslt_bana (`ls $xslt_dir`) {
-  chomp $xslt_bana;
-  if(not $xslt_bana=~m|\.xslt\.xml$|) {
-    next;
-  }
-  my $xslt_fufi="$xslt_dir/$xslt_bana";
-  $to_repo->{$xslt_fufi}=1;
-}
-
 foreach my $in_file (keys %{$to_repo}) {
   my $out_file=$in_file;
   $out_file=~s|$home_dir|$home_dir/git|;
