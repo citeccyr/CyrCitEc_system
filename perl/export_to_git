@@ -52,6 +52,28 @@ foreach my $xslt_bana (`ls $xslt_dir`) {
   $to_repo->{$xslt_fufi}=1;
 }
 
+## I add all the doc files. I will clean them manually
+my $doc_dir=$Cec::Paths::dirs->{'doc'};
+foreach my $doc_bana (`ls $doc_dir`) {
+  chomp $doc_bana;
+  if(not $doc_bana=~m|\.doc\.txt$|) {
+    next;
+  }
+  my $doc_fufi="$doc_dir/$doc_bana";
+  $to_repo->{$doc_fufi}=1;
+}
+
+## I add all the XSLT files. I will clean them manually
+my $xslt_dir=$Cec::Paths::dirs->{'xslt'};
+foreach my $xslt_bana (`ls $xslt_dir`) {
+  chomp $xslt_bana;
+  if(not $xslt_bana=~m|\.xslt\.xml$|) {
+    next;
+  }
+  my $xslt_fufi="$xslt_dir/$xslt_bana";
+  $to_repo->{$xslt_fufi}=1;
+}
+
 foreach my $in_file (keys %{$to_repo}) {
   my $out_file=$in_file;
   $out_file=~s|$home_dir|$home_dir/git|;
@@ -76,6 +98,7 @@ sub parse_perl_file {
   ## recitex can not be parsed, and it has no local
   ## libraries
   if($perl_file eq '/home/cec/perl/recitex.pl') {
+    $to_repo->{$perl_file}=1;
     return;
   }
   my @lines;
@@ -116,6 +139,14 @@ sub look_for_perl_library {
   }
   return $to_repo;
 }
+
+#sub look_for_perl_syscall {
+#  my $line=shift;
+#  my $to_repo=shift;
+#  my $local_libs=shift;
+#  print "$line\n";
+#  return $to_repo;
+#}
 
 sub use_to_file {
   my $use=shift;
