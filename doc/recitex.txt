@@ -1,0 +1,46 @@
+Recitex is a Perl script to extract citation data (references and
+in-text citations) from research papers. The script is written and
+developed by Victor Lyapunov
+(https://icmmg.nsc.ru/ru/content/employees/lyapunov-viktor-mihaylovich)
+for the CitEcCyr project funded by RANEPA (http://www.ranepa.ru/eng/).
+
+The input to recitex is JSON files produced from papers in PDF. We use
+the pdf-stream-cli, https://github.com/citeccyr/pdf-stream-cli. It
+written for the CitEcCyr project by Sergey Petrov,
+https://github.com/mrauhu.
+
+The invocation is, as in the script
+
+recitex.pl - references and citation extraction
+usage: recitex.pl [-Jjn] [-b spx_db_file] [-s spx_ip:port]
+path/file[.json] [source_handle]
+        -j -- dump source text extracted from json
+        -J -- dump source text extracted from json, rearranged properly
+        -n -- do not find citations, make reference list only
+        -s -- Sphinx address:port,
+        -b -- db file to convert Sph answer to handle, assoc. with the reference
+
+The latter three options require some explanation. In an academic
+paper, references to other papers appear usually at the end of the
+paper. There, we find a description of the referenced paper. We can
+parse that reference to find commonly used elements, typically the
+title, the authors and year say.
+
+Usually, the papers we scan for references are instances of papers we
+find in a bibliographic collection. After scanning the references, we
+can try to find the referenced paper in our collection. If we are
+successful, we have a citation relationship between two citing and
+cited papers.
+
+To find referenced papers in out collection we use Sphinx search
+(http://sphinxsearch.com/). This runs as a daemon. With -s, we give
+the host and port where recitex can send the sphinx queries to. The
+index has to be built externally. The sphinx search daemon has to be
+up-and-running to conduct searches.
+
+By default Sphinx DB is not used. It is looked up only if the user
+correctly specifies the "translation" db file with '-b' option.
+
+Sphinx db supplies the RePEc handles of the articles in the reference
+list. Without Sphinx, handle= attributes are gone from the recitex
+output. The rest is not changed.

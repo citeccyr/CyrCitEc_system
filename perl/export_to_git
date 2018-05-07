@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 
+use Carp qw(confess);
 use Data::Dumper;
 use File::Basename;
 use File::Path;
@@ -56,7 +57,7 @@ foreach my $xslt_bana (`ls $xslt_dir`) {
 my $doc_dir=$Cec::Paths::dirs->{'doc'};
 foreach my $doc_bana (`ls $doc_dir`) {
   chomp $doc_bana;
-  if(not $doc_bana=~m|\.doc\.txt$|) {
+  if(not $doc_bana=~m|\.txt$|) {
     next;
   }
   my $doc_fufi="$doc_dir/$doc_bana";
@@ -77,8 +78,23 @@ foreach my $in_file (keys %{$to_repo}) {
 }
 
 ## commit and upload
+
+&import_changes('/doc/');
 system("cd $home_dir/git ; git commit -a -m 'automated commit by export_to_git'");
 system("cd $home_dir/git ; git push -u origin master");
+
+sub import_changes {
+  my $regex=shift // confess "I need a regex here";
+  foreach my $file (keys %$to_repo) {
+    if(not $file=~m|\Q$regex\E|) {
+      next
+    }
+    print "I have to import changes for $file\n";
+  }
+}
+
+
+
 
 sub parse_perl_file {
   my $perl_file=shift;
