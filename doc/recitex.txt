@@ -1,4 +1,4 @@
-Recitex is a Perl script to extract citation data (references and
+>Recitex is a Perl script to extract citation data (references and
 in-text citations) from research papers. The script is written and
 developed by Victor Lyapunov
 (https://icmmg.nsc.ru/ru/content/employees/lyapunov-viktor-mihaylovich)
@@ -44,3 +44,4 @@ correctly specifies the "translation" db file with '-b' option.
 Sphinx db supplies the RePEc handles of the articles in the reference
 list. Without Sphinx, handle= attributes are gone from the recitex
 output. The rest is not changed.
+

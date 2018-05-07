@@ -15,7 +15,8 @@ use Cec::Paths;
 my $home_dir=$ENV{'HOME'};
 my $crontab_file="$home_dir/etc/crontab";
 my $self_file="$home_dir/perl/export_to_git";
-my $lib_dir="$home_dir/lib/perl";
+my $plib_dir="$home_dir/lib/perl";
+my $git_dir=$Cec::Paths::dirs->{'rep'};
 
 ## files to put in the repo
 my $to_repo;
@@ -32,7 +33,7 @@ foreach my $file (keys %{$to_parse->{'bin'}}) {
 
 ## find local library names
 my $local_libs;
-foreach my $lib (`ls $lib_dir`) {
+foreach my $lib (`ls $plib_dir`) {
   chomp $lib;
   push(@{$local_libs},$lib);
 }
@@ -66,7 +67,7 @@ foreach my $doc_bana (`ls $doc_dir`) {
 
 foreach my $in_file (keys %{$to_repo}) {
   my $out_file=$in_file;
-  $out_file=~s|$home_dir|$home_dir/git|;
+  $out_file=~s|$home_dir|$git_dir|;
   my $dir=dirname($out_file);
   if(not -d $dir) {
     mkpath($dir);
@@ -74,7 +75,7 @@ foreach my $in_file (keys %{$to_repo}) {
   system("rsync -qa $in_file $out_file");
   my $ga_file=$in_file;
   $ga_file=~s|$home_dir/||;
-  system("cd $home_dir/git ; git add $ga_file");
+  system("cd $git_dir ; git add $ga_file");
 }
 
 ## commit and upload
@@ -89,12 +90,12 @@ sub import_changes {
     if(not $file=~m|\Q$regex\E|) {
       next
     }
-    print "I have to import changes for $file\n";
+    my $git_file=$file;
+    $git_file=~s|$home_dir/||;
+    print "I have to import changes for $git_file\n";
+    system("cd $git_dir ; git checkout -f $git_file");
   }
 }
-
-
-
 
 sub parse_perl_file {
   my $perl_file=shift;
@@ -162,7 +163,7 @@ sub use_to_file {
   $file=~s|use\s+||;
   $file=~s|::|/|g;
   $file=~s|;\s*$|.pm|g;
-  $file="$lib_dir/$file";
+  $file="$plib_dir/$file";
   return $file;
 }
 

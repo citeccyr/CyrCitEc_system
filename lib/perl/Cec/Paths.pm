@@ -25,6 +25,7 @@ $dirs->{'work'}=$dirs->{'opt'}.'/work';
 $dirs->{'test'}=$dirs->{'work'}.'/test';
 $dirs->{'train'}=$dirs->{'work'}.'/train';
 $dirs->{'git'}=$dirs->{'opt'}.'/git';
+$dirs->{'rep'}=$dirs->{'home'}.'/git';
 $dirs->{'doc'}=$dirs->{'home'}.'/doc';
 $dirs->{'index'}=$dirs->{'opt'}.'/index';
 $dirs->{'wv'}=$dirs->{'git'}.'/webvectors';
