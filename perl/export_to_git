@@ -81,7 +81,7 @@ foreach my $in_file (keys %{$to_repo}) {
   if(not -d $dir) {
     mkpath($dir);
   }
-  system("rsync -va $in_file $out_file");
+  system("rsync -qa $in_file $out_file");
   my $ga_file=$in_file;
   $ga_file=~s|$home_dir/||;
   system("cd $home_dir/git ; git add $ga_file");
