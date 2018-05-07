@@ -43,4 +43,4 @@ correctly specifies the "translation" db file with '-b' option.
 
 Sphinx db supplies the RePEc handles of the articles in the reference
 list. Without Sphinx, handle= attributes are gone from the recitex
-output. The rest is not changed.
+output.
