@@ -72,6 +72,11 @@ foreach my $in_file (keys %{$to_repo}) {
   if(not -d $dir) {
     mkpath($dir);
   }
+  ## fixMe: bad hack
+  if($in_file=~m|/doc/|) {
+    print "I skip $in_file\n";
+    next;
+  }
   system("rsync -qa $in_file $out_file");
   my $ga_file=$in_file;
   $ga_file=~s|$home_dir/||;
@@ -79,11 +84,9 @@ foreach my $in_file (keys %{$to_repo}) {
 }
 
 ## commit and upload
-
-
 &import_changes('/doc/');
-###system("cd $home_dir/git ; git commit -a -m 'automated commit by export_to_git'");
-###system("cd $home_dir/git ; git push -u origin master");
+system("cd $home_dir/git ; git commit -a -m 'automated commit by export_to_git'");
+system("cd $home_dir/git ; git push -u origin master");
 
 sub import_changes {
   my $regex=shift // confess "I need a regex here";
