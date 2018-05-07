@@ -80,7 +80,10 @@ foreach my $in_file (keys %{$to_repo}) {
 
 ## commit and upload
 
+
 &import_changes('/doc/');
+
+die;
 system("cd $home_dir/git ; git commit -a -m 'automated commit by export_to_git'");
 system("cd $home_dir/git ; git push -u origin master");
 
@@ -93,6 +96,7 @@ sub import_changes {
     my $git_file=$file;
     $git_file=~s|$home_dir/||;
     print "I have to import changes for $git_file\n";
+    die $git_file;
     system("cd $git_dir ; git checkout -f $git_file");
   }
 }
