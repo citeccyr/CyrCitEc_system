@@ -32,8 +32,9 @@ while(1) {
   }
   else {
     print "I have $count_running scripts.\n";
+    exit;
   }
-  print "I sleep $interval ...";
+  print "I sleep $interval seconds ...";
   sleep $interval;
   print " woke up.\n";
 }
@@ -41,6 +42,7 @@ while(1) {
 sub check_if_to_do {
   my $p=Cidig::Peren->new({'check_if_to_do'=>1,
 			   'cache_ok'=>0,
+			   'verbose'=>1,
 			   'force'=>0});
   ## fixme:: this is also in apply_recitex
   my $index_file=&Cidig::Files::find_most_recent_file_in_directory($dirs->{'index'});

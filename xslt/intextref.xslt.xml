@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns="http://www.w3.org/1999/xhtml"
+                exclude-result-prefixes="#default">
+  <xsl:template name="show_intextref">
+    <xsl:param name="intext"/>
+    <xsl:param name="link_exact"/>
+    <xsl:text>In-text reference with the coordinate start=</xsl:text>
+    <xsl:value-of select="$intext/Start"/>
+    <xsl:text>&#10;</xsl:text>
+    <dl style="margin: 0pt">
+      <xsl:text>&#10;</xsl:text>
+      <dt>
+	<xsl:text>Prefix</xsl:text>
+      </dt>
+      <xsl:text>&#10;</xsl:text>
+      <dd>
+	<xsl:text>&#10;</xsl:text>
+	<xsl:value-of select="$intext/Prefix"/>
+	<xsl:text>&#10;</xsl:text>
+      </dd>
+      <dt>
+	<xsl:text>Exact</xsl:text>
+      </dt>
+      <xsl:text>&#10;</xsl:text>
+      <dd>
+	<xsl:text>&#10;</xsl:text>
+	<xsl:choose>
+	  <xsl:when test="$link_exact">
+	    <a>
+	      <xsl:attribute name="href">
+		<xsl:value-of select="$pdf_linker"/>
+		<xsl:value-of select="../@found_in"/>
+		<xsl:text>&amp;file=</xsl:text>
+		<xsl:value-of select="../@futli"/>
+		<xsl:text>&amp;ref=spz:ranepa:intextrefs:</xsl:text>
+		<xsl:call-template name="intextrefid">
+		  <xsl:with-param name="papid">
+		    <xsl:value-of select="../@found_in"/>
+		  </xsl:with-param>
+		  <xsl:with-param name="start">
+		    <xsl:value-of select="$intext/Start"/>
+		  </xsl:with-param>
+		</xsl:call-template>
+	      </xsl:attribute>
+	      <xsl:value-of select="$intext/Exact"/>
+	    </a>
+	  </xsl:when>
+	  <xsl:otherwise>
+	    <xsl:value-of select="$intext/Exact"/>
+	    <xsl:text>&#10;</xsl:text>
+	  </xsl:otherwise>
+	</xsl:choose>
+      </dd>
+      <xsl:text>&#10;</xsl:text>
+      <dt>
+	<xsl:text>Suffix</xsl:text>
+      </dt>
+      <xsl:text>&#10;</xsl:text>
+      <dd>
+	<xsl:text>&#10;</xsl:text>
+	<xsl:value-of select="$intext/Suffix"/>
+	<xsl:text>&#10;</xsl:text>
+      </dd>
+    </dl>
+  </xsl:template>
+  <xsl:template name="intextrefid">
+    <xsl:param name="papid"/>
+    <xsl:param name="start"/>
+    <xsl:variable name="part_1"
+		  select="substring-before($papid,':')">
+    </xsl:variable>
+    <xsl:variable name="part_2"
+		  select="substring-after($papid,':')">
+    </xsl:variable>
+    <xsl:variable name="part_21"
+		  select="substring-before($part_2,':')">
+    </xsl:variable>
+    <xsl:variable name="part_22"
+		  select="substring-after($part_2,':')">
+    </xsl:variable>
+    <xsl:variable name="part_221"
+		  select="substring-before($part_22,':')">
+    </xsl:variable>
+    <xsl:variable name="part_222"
+		  select="substring-after($part_22,':')">
+    </xsl:variable>
+    <xsl:value-of select="$part_1"/>
+    <xsl:text>_</xsl:text>
+    <xsl:value-of select="$part_21"/>
+    <xsl:text>_</xsl:text>
+    <xsl:value-of select="$part_221"/>
+    <xsl:text>_</xsl:text>
+    <xsl:value-of select="$part_222"/>
+    <xsl:text>_</xsl:text>
+    <xsl:value-of select="$start"/>
+  </xsl:template>
+  <xsl:template name="show_intextrefs">
+    <xsl:param name="local"/>
+    <xsl:param name="link_exact"/>
+    <xsl:text>Total in-text references:&#32;</xsl:text>
+    <xsl:value-of select="count($local/intextref)"/>
+    <xsl:text>&#10;</xsl:text>
+    <ol>
+      <xsl:for-each select="$local/intextref">
+        <li>
+          <xsl:call-template name="show_intextref">
+            <xsl:with-param name="intext"
+                            select="."/>
+            <xsl:with-param name="link_exact"
+                            select="$link_exact"/>
+          </xsl:call-template>
+          <br/>
+          <xsl:text>&#10;</xsl:text>
+        </li>
+      </xsl:for-each>
+    </ol>
+  </xsl:template>
+</xsl:stylesheet>

@@ -18,7 +18,9 @@ $id2file->{'RePEc'}=sub {
 
 $id2file->{'spz'}=sub {
   my $id=shift // confess "I need an identifier here.";
-  my $file=$id;
+  ## change on 2018-05-18 to try to get rid of duplicate WARCS
+  #my $file=$id;
+  my $file=lc($id);
   $file=~s|repec|RePEc|i;
   ## change the first three :
   $file=~s|:|/|;
@@ -54,26 +56,27 @@ $file2id->{'spz'}=sub {
   return $handle;
 };
 
-our $input2id;
-$input2id->{'spz'}=sub {
-  my $file=shift // confess "I need an identifier here.";
-  chomp $file;
-  my $id=$file;
-  $id=~s|\.xml$||;
-  ## change the first three :
-  $id=~s|/|:|;
-  $id=~s|/|:|;
-  $id=~s|/|:|;
-  #my $id1=$id;
-  $id=~s/^([^:]{3}):/RePEc:$1:/;
-  $id=~s|^neicon:|spz:neicon:|;
-  $id=~s|^rnp:|RePEc:rnp:|;
-  #die "$id1 $id";
-  ## take the part until the /
-  #$id=substr($id,0,$-[0]+1);
-  #$id.=uri_unescape(substr($id,$-[0]+1));
-  return $id;
-};
+#our $input2id;
+#$input2id->{'spz'}=sub {
+#  my $file=shift // confess "I need an identifier here.";
+#  chomp $file;
+#  my $id=$file;
+#  $id=~s|\.xml$||;
+#  ## change the first three :
+#  $id=~s|/|:|;
+#  $id=~s|/|:|;
+#  $id=~s|/|:|;
+#  #my $id1=$id;
+#  $id=~s/^([^:]{3}):/RePEc:$1:/;
+#  $id=~s|^neicon:|spz:neicon:|;
+#  $id=~s|^polessu:|spz:polessu:|;
+#  $id=~s|^rnp:|RePEc:rnp:|;
+#  #die "$id1 $id";
+#  ## take the part until the /
+#  #$id=substr($id,0,$-[0]+1);
+#  #$id.=uri_unescape(substr($id,$-[0]+1));
+#  return $id;
+#};
 
 $file2id->{'spz_OLD'}=sub {
   my $file=shift // confess "I need an identifier here.";

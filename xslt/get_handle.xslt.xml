@@ -6,7 +6,8 @@
           method="text"
           media-type="text/plain"/>
   <template match="text()"/>
-  <template match="/">
-    <value-of select="sum(//@stats_b)"/>
+  <template match="/root">
+    <value-of select="./Handle"/>
+    <value-of select=".//attr[@id='handle']"/>
   </template>
 </stylesheet>

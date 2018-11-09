@@ -1,0 +1,270 @@
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns="http://www.w3.org/1999/xhtml"
+                exclude-result-prefixes="#default">
+  <xsl:include href="explain_table.xslt.xml"/>
+  <xsl:include href="sums_row_table.xslt.xml"/>
+  <xsl:include href="page.xslt.xml"/>
+  <xsl:variable name="title"
+		select="'S'"/>
+  <xsl:variable name="date"
+		select="/table/@date"/>
+  <xsl:variable name="date_pretty"
+		select="translate($date,'-','–')"/>
+  <xsl:template match="/">
+    <xsl:call-template name="page">
+      <xsl:with-param name="title"
+		      select="$title"/>
+      <xsl:with-param name="body">
+	<xsl:call-template name="results"/>
+      </xsl:with-param>
+      <xsl:with-param name="extra_head">
+	<script type="text/javascript">
+	  <xsl:value-of select="$js"/>
+	</script>
+      </xsl:with-param>
+      <xsl:with-param name="css_data">
+	<style type="text/css">
+	  <xsl:text>th { </xsl:text>
+	  <xsl:text>font-weight: normal;</xsl:text>
+	  <xsl:text>text-align: left;</xsl:text>
+	  <xsl:text>font-style: italics;</xsl:text>
+	  <xsl:text>}&#10;</xsl:text>
+	  <xsl:text>.u {text-decoration: underline}&#10;</xsl:text>
+	  <xsl:text>td { </xsl:text>
+	  <xsl:text>text-align: right;</xsl:text>
+	  <xsl:text>}&#10;</xsl:text>
+	  <xsl:text>#explain {display: none}&#10;</xsl:text>
+	</style>
+      </xsl:with-param>
+    </xsl:call-template>
+  </xsl:template>
+  <xsl:template name="results">
+    <h1>
+      <xsl:value-of select="$title"/>
+    </h1>
+    <h2>
+      <xsl:text>Explanatory table&#32;</xsl:text>
+      <span id="show" onclick="show()">[<span class="u">show</span>]</span>
+      <span id="hide" onclick="hide()">[<span class="u">hide</span>]</span>
+    </h2>
+    <xsl:text>&#10;</xsl:text>
+    <!-- ## in explain_table.xslt.xml -->
+    <xsl:copy-of select="$explain_table"/>
+    <xsl:text>&#10;</xsl:text>
+    <h2>
+      <xsl:text>Data table</xsl:text>
+    </h2>
+    <xsl:text>&#10;</xsl:text>
+    <table>
+      <!-- ## header row -->
+      <tr>
+	<xsl:text>&#10;</xsl:text>
+	<th></th>
+	<xsl:text>&#10;</xsl:text>
+	<th></th>
+	<xsl:text>&#10;</xsl:text>
+	<th style="text-align: center" align="center">[1]</th>
+	<xsl:text>&#10;</xsl:text>
+	<th style="text-align: center" align="center">[2]</th>
+	<xsl:text>&#10;</xsl:text>
+	<th style="text-align: center" align="center">[3]</th>
+	<xsl:text>&#10;</xsl:text>
+	<th style="text-align: center" align="center">[4]</th>
+	<xsl:text>&#10;</xsl:text>
+	<th style="text-align: center" align="center">[5]</th>
+	<xsl:text>&#10;</xsl:text>
+	<th style="text-align: center" align="center">[6]</th>
+	<xsl:text>&#10;</xsl:text>
+	<th style="text-align: center" align="center">[7]</th>
+	<xsl:text>&#10;</xsl:text>
+	<th style="text-align: center" align="center">[8]</th>
+	<xsl:text>&#10;</xsl:text>
+	<th style="text-align: center" align="center">[9]</th>
+	<xsl:text>&#10;</xsl:text>
+	<th style="text-align: center" align="center">[a]</th>
+	<xsl:text>&#10;</xsl:text>
+	<th style="text-align: center" align="center">[b]</th>
+	<xsl:text>&#10;</xsl:text>
+	<th style="text-align: center" align="center">[c]</th>
+	<xsl:text>&#10;</xsl:text>
+	<th style="text-align: center" align="center">[d]</th>
+	<xsl:text>&#10;</xsl:text>
+	<th style="text-align: center" align="center">[e]</th>
+	<xsl:text>&#10;</xsl:text>
+      </tr>
+      <tr>
+	<th></th>
+	<th>series</th>
+	<xsl:text>&#10;</xsl:text>
+	<!-- 1 -->
+	<th class="records">records</th>
+	<xsl:text>&#10;</xsl:text>
+	<!-- 2 -->
+	<th class="has_futli">with futli</th>
+	<xsl:text>&#10;</xsl:text>
+	<!-- 3 -->
+	<th class="warcs">with WARCs</th>
+	<xsl:text>&#10;</xsl:text>
+	<!-- 4 -->
+	<th class="pdf_warcs">with PDF WARCs</th>
+	<xsl:text>&#10;</xsl:text>
+	<!-- 5 -->
+	<th class="json">with JSON</th>
+	<xsl:text>&#10;</xsl:text>
+	<!-- 6 -->
+	<th class="refs">with refs</th>
+	<xsl:text>&#10;</xsl:text>
+	<!-- 7 -->
+	<th class="ints">with intrefs</th>
+	<xsl:text>&#10;</xsl:text>
+	<!-- 8 -->
+	<th class="cits">with cits</th>
+	<xsl:text>&#10;</xsl:text>
+	<!-- 9 -->
+	<th class="mits">with mits</th>
+	<xsl:text>&#10;</xsl:text>
+	<!-- a -->
+	<th class="cref">&#x03a3; refs</th>
+	<xsl:text>&#10;</xsl:text>
+	<!-- b -->
+	<th class="ccon">&#x03a3; citcon</th>
+	<xsl:text>&#10;</xsl:text>
+	<!-- c -->
+	<th class="cint">&#x03a3; intrefs</th>
+	<xsl:text>&#10;</xsl:text>
+	<!-- d -->
+	<th class="ccit">&#x03a3; cits</th>
+	<xsl:text>&#10;</xsl:text>
+	<!-- e -->
+	<th class="ccit">&#x03a3; mitc</th>
+	<xsl:text>&#10;</xsl:text>
+      </tr>
+      <xsl:for-each select="/table/series">
+	<xsl:text>&#10;</xsl:text>
+	<tr>
+	  <th></th>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+	  <th>
+	    <a>
+	      <xsl:attribute name="href">
+		<xsl:text>https://socionet.ru/collection.xml?h=</xsl:text>
+		<xsl:value-of select="@id"/>
+	      </xsl:attribute>
+	      <xsl:value-of select="@id"/>
+	    </a>
+	  </th>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+	  <!-- 1 -->
+	  <td class="records">
+	    <xsl:value-of select="./records"/>
+	  </td>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+	  <!-- 2 -->
+          <td class="has_futli">
+	    <xsl:value-of select="./has_futli"/>
+	  </td>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+	  <!-- 3 -->
+          <td class="warcs">
+	    <xsl:value-of select="./warcs"/>
+	  </td>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+	  <!-- 4 -->
+          <td class="pdf_warcs">
+	    <xsl:value-of select="./pdf_warcs"/>
+	  </td>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+	  <!-- 5 -->
+          <td class="json">
+	    <xsl:value-of select="./json"/>
+	  </td>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+	  <!-- 6 -->
+          <td class="refs">
+	    <xsl:value-of select="./refs"/>
+	  </td>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+	  <!-- 7 -->
+          <td class="ints">
+	    <xsl:value-of select="./ints"/>
+	  </td>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+	  <!-- 8 -->
+          <td class="cits">
+	    <xsl:value-of select="./cits"/>
+	  </td>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+	  <!-- 9 -->
+          <td class="mits">
+	    <xsl:value-of select="./mits"/>
+	  </td>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+	  <!-- a -->
+          <td class="cref">
+	    <xsl:value-of select="./cref"/>
+	  </td>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+	  <!-- b -->
+          <td class="ccon">
+	    <xsl:value-of select="./ccon"/>
+	  </td>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+	  <!-- c -->
+          <td class="cint">
+	    <xsl:value-of select="./cint"/>
+	  </td>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+	  <!-- d -->
+          <td class="ccit">
+	    <xsl:value-of select="./ccit"/>
+	  </td>
+	  <xsl:text>&#10;&#32;&#32;&#32;&#32;&#32;</xsl:text>
+	  <!-- e -->
+          <td class="cmit">
+	    <xsl:value-of select="./cmit"/>
+	  </td>
+          <xsl:text>&#10;</xsl:text>
+	</tr>
+        <xsl:text>&#10;</xsl:text>
+      </xsl:for-each>
+      <xsl:copy-of select="$sums_row"/>
+    </table>
+    <hr/>
+    <xsl:copy-of select="$footer"/>
+  </xsl:template>
+  <xsl:variable name="footer">
+    <div>
+      <xsl:text>This fine page is maintained by </xsl:text>
+      <a href="http://openlib.org/home/krichel">
+	<text>Thomas Krichel</text>
+      </a>
+      <xsl:text>. It was last updated on&#32;</xsl:text>
+      <xsl:value-of select="$date_pretty"/>
+      <xsl:text>.</xsl:text>
+    </div>
+  </xsl:variable>
+  <xsl:variable name="js">
+    <xsl:text>window.onload&#32;=&#32;function&#32;()&#32;{&#10;</xsl:text>
+    <xsl:text>&#32;hide();&#10;</xsl:text>
+    <xsl:text>}&#10;</xsl:text>
+    <xsl:text>&#10;</xsl:text>
+    <xsl:text>function&#32;show()&#32;{&#10;</xsl:text>
+    <xsl:text>&#32;var&#32;table=document.getElementById("explain");&#10;</xsl:text>
+    <xsl:text>&#32;table.style.display='block';&#10;</xsl:text>
+    <xsl:text>&#32;var&#32;show=document.getElementById("show");&#10;</xsl:text>
+    <xsl:text>&#32;show.style.display='none';&#10;</xsl:text>
+    <xsl:text>&#32;var&#32;hide=document.getElementById("hide");&#10;</xsl:text>
+    <xsl:text>&#32;hide.style.display='inline';&#10;</xsl:text>
+    <xsl:text>}&#10;</xsl:text>
+    <xsl:text>&#10;</xsl:text>
+    <xsl:text>function&#32;hide()&#32;{&#10;</xsl:text>
+    <xsl:text>&#32;var&#32;table=document.getElementById("explain");&#10;</xsl:text>
+    <xsl:text>&#32;table.style.display='none';&#10;</xsl:text>
+    <xsl:text>&#32;var&#32;show=document.getElementById("show");&#10;</xsl:text>
+    <xsl:text>&#32;show.style.display='inline';&#10;</xsl:text>
+    <xsl:text>&#32;var&#32;hide=document.getElementById("hide");&#10;</xsl:text>
+    <xsl:text>&#32;hide.style.display='none';&#10;</xsl:text>
+    <xsl:text>}&#10;</xsl:text>
+  </xsl:variable>
+</xsl:stylesheet>

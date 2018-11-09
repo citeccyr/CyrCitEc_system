@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns="http://www.w3.org/1999/xhtml"
+                exclude-result-prefixes="#default">
+  <xsl:include href="converters.xslt.xml"/>
+  <xsl:include href="footer.xslt.xml"/>
+<!--  <xsl:include href="numbers.xslt.xml"/> -->
+  <xsl:include href="page.xslt.xml"/>
+  <xsl:include href="stats_css.xslt.xml"/>
+  <xsl:variable name="date"
+		select="/table/@date"/>
+  <xsl:variable name="date_pretty"
+		select="translate($date,'-','–')"/>
+  <xsl:variable name="title">
+    <xsl:text>Index of References</xsl:text>
+  </xsl:variable>
+  <xsl:template match="/">
+    <xsl:call-template name="page">
+      <xsl:with-param name="title"
+		      select="$title"/>
+      <xsl:with-param name="body">
+	<xsl:call-template name="bundles"/>
+      </xsl:with-param>
+      <xsl:with-param name="css_data">
+	<xsl:copy-of select="$css"/>
+      </xsl:with-param>
+    </xsl:call-template>
+  </xsl:template>
+  <xsl:template name="bundles">
+    <h1>
+      <xsl:value-of select="$title"/>
+    </h1>
+    <xsl:text>&#10;</xsl:text>
+    <table>
+      <tr>
+	<th>
+	  <xsl:text>Unique references</xsl:text>
+	</th>
+	<th align="right" style="align: right">
+	  <xsl:text>pubs</xsl:text>
+	</th>
+	<th align="right" style="align: right">
+	  <xsl:text>cits</xsl:text>
+	</th>
+	<th align="right" style="align: right">
+	  <xsl:text>with</xsl:text>
+	</th>
+	<th align="right" style="align: right">
+	  <xsl:text>distribution</xsl:text>
+	</th>
+      </tr>
+      <xsl:for-each select="/bundles/bundle">
+	<xsl:sort select="@npub" data-type="number" order="descending"/>
+        <xsl:text>&#10;</xsl:text>
+	<tr>
+	  <xsl:text>&#10;</xsl:text>
+	  <td align="left"
+	      style="align: left">
+	    <xsl:value-of select="@author"/>
+	    <xsl:text>&#32;(</xsl:text>
+	      <xsl:value-of select="@year"/>
+	      <xsl:text>)&#32;</xsl:text>
+	      <xsl:value-of select="@title"/>
+	      <xsl:text>&#32;</xsl:text>
+	      <a>
+		<xsl:attribute name="href">
+		  <xsl:text>xml/</xsl:text>
+		  <xsl:value-of select="@bunshid"/>
+		  <xsl:text>.xml</xsl:text>
+		</xsl:attribute>
+		<xsl:text>(raw data)</xsl:text>
+	      </a>
+	  </td>
+          <xsl:text>&#10;</xsl:text>
+	  <td align="right"
+	      title="pubs"
+	      style="align: right">
+	    <a>
+	      <xsl:attribute name="href">
+		<xsl:text>pub/</xsl:text>
+		<xsl:value-of select="@bunshid"/>
+		<xsl:text>.html</xsl:text>
+	      </xsl:attribute>
+	      <xsl:value-of select="@npub"/>
+	    </a>
+	  </td>
+	  <xsl:text>&#10;</xsl:text>
+	  <td align="right"
+	      title="cits"
+	      style="align: right">
+	    <a>
+	      <xsl:attribute name="href">
+		<xsl:text>cit/</xsl:text>
+		<xsl:value-of select="@bunshid"/>
+		<xsl:text>.html</xsl:text>
+	      </xsl:attribute>
+	      <xsl:value-of select="@ncit"/>
+	    </a>
+	  </td>
+	  <xsl:text>&#10;</xsl:text>
+	  <td align="right"
+	      title="with"
+	      style="align: right">
+	    <a>
+	      <xsl:attribute name="href">
+		<xsl:text>cro/</xsl:text>
+		<xsl:value-of select="@bunshid"/>
+		<xsl:text>.html</xsl:text>
+	      </xsl:attribute>
+	      <xsl:value-of select="@ncro"/>
+	    </a>
+	  </td>
+	  <xsl:text>&#10;</xsl:text>
+	  <td align="right"
+	      title="distribution"
+	      style="align: right">
+	    <a>
+	      <xsl:attribute name="href">
+		<xsl:value-of select="$dis_url"/>
+		<xsl:value-of select="@bunshid"/>
+	      </xsl:attribute>
+	      <xsl:value-of select="@ndis"/>
+	    </a>
+	  </td>
+	  <xsl:text>&#10;</xsl:text>
+	</tr>
+	<xsl:text>&#10;</xsl:text>
+      </xsl:for-each>
+    </table>
+  </xsl:template>
+</xsl:stylesheet>

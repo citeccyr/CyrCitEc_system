@@ -8,6 +8,7 @@ use Data::Dumper;
 use Date::Calc qw(Add_Delta_Days);
 use Date::Format;
 
+use Ernad::Shoti;
 
 sub regular_date {
   my $in=shift;
@@ -188,14 +189,24 @@ sub get_past_dates_from_number {
   return $dates;
 }
 
-
-##########################################################################
-## from Common
-
 sub today {
   my $date=time2str("%Y-%m-%d", time);
   return $date;
 }
+
+sub yesterday {
+  my $yesterday=`date -I -d yesterday`;
+  chomp $yesterday;
+  return $yesterday;
+}
+
+
+sub ago_2 {
+  my $ago_2=`date -I -d '2 days ago'`;
+  chomp $ago_2;
+  return $ago_2;
+}
+
 
 sub get_up_date {
   my $date=time2str("%Y\x{2012}%m\x{2012}%d", time);
@@ -298,6 +309,12 @@ sub paper_age {
   return diff_dates($in,&today());
 }
 
+sub mshoti {
+  my $file=shift // confess "I need a file here.";
+  my $time=&mtime($file);
+  my $shoti=&Ernad::Shoti::make($time);
+  return $shoti;
+}
 
 
 1;

@@ -73,7 +73,6 @@ sub report_on_missing {
   }
 }
 
-
 ## check we have a file set and it's a file
 sub file_check {
   my $w=shift;
@@ -158,17 +157,19 @@ sub parse {
   ## should I jump?
   my $jump=0;
   $line='';
+  my $count_lines=0;
   while(1) {
     if($jump) {
       $fh->seek($jump,1);
     }
     $line=<$fh>;
+    $count_lines++;
     if(not $line) {
       last;
     }
     # $w->{'current_line'}=$line;
     # $w->{'count_lines'}++;
-    $jump=$r->add_line($line);
+    $jump=$r->add_line($line,$count_lines);
     if(not $r->{'closed'}) {
       next;
     }
@@ -178,7 +179,7 @@ sub parse {
     $r=Warc::Record->new({'start_byte' => $end_byte});
     $w->{'recs'}->[$w->{'count_recs'}]=$r;
     ## r->add_line did not add the start line of the record, do it here.
-    $r->add_line($line);
+    $r->add_line($line,$count_lines);
   }
   ## delete the last record, it will be empty
   delete $w->{'recs'}->[$w->{'count_recs'}];
@@ -225,16 +226,96 @@ sub show_body {
   print $out;
 }
 
+# ## obsoleted with repetiton problem of 2018-10
+# ## find the payload in a hash
+# sub get_payload_digest {
+#   my $w=shift;
+#   my $payload_digest;
+#   ## monster bug of 2018-08-08
+#   if(not $w->{'recs'}) {
+#     $w->parse();
+#   }
+#   foreach my $rec (@{$w->{'recs'}}) {
+#     ## bug of 2018-10-09: It should be "Payload" rather than "Block"
+#     ## therefore this function is obsolete and replaced with the next
+#     my $digest=$rec->{'warc_header'}->{'WARC-Block-Digest'} // next;
+#     $payload_digest->{$digest}=1;
+#   }
+#   ## unclear what this line does
+#   $w->{'$payload_digest'}=$payload_digest;
+#   return $payload_digest;
+# }
+
 ## find the payload in a hash
-sub get_payload_digest {
+sub get_digests {
   my $w=shift;
   my $payload_digest;
-  foreach my $rec (@{$w->{'recs'}}) {
-    my $digest=$rec->{'warc_header'}->{'WARC-Block-Digest'} // next;
-    $payload_digest->{$digest}=1;
+  ## monster bug of 2018-08-08
+  if(not $w->{'recs'}) {
+    $w->parse();
   }
-  $w->{'$payload_digest'}=$payload_digest;
-  return $payload_digest;
+  my $digests;
+  foreach my $type ('Block','Payload') {
+    foreach my $rec (@{$w->{'recs'}}) {
+      my $header='WARC-'.$type.'-Digest';
+      #print Dumper $rec->{'warc_header'};
+      #print "$header\n";
+      my $digest=$rec->{'warc_header'}->{$header} // next;
+      if(not $digests->{lc($type)}->{$digest}) {
+	$digests->{lc($type)}->{$digest}=1;
+	next;
+      }
+      $digests->{lc($type)}->{$digest}++;
+    }
+  }
+  $w->{'digests'}=$digests;
+  return $digests;
+}
+
+
+## find the payload in a hash
+sub get_response_digests {
+  my $w=shift;
+  my $payload_digest;
+  ## monster bug of 2018-08-08
+  if(not $w->{'recs'}) {
+    $w->parse();
+  }
+  my $digests;
+  foreach my $type ('Block','Payload') {
+    foreach my $rec (@{$w->{'recs'}}) {
+      if(not $rec->{'type'}) {
+	next;
+      }
+      if(not $rec->{'type'} eq 'response') {
+	next;
+      }
+      ## skip warcinfo
+      #if($rec->{'warcinfo'}) {
+#	next;
+ #     }
+      ## skip request
+#      if($rec->{'request'}) {
+#	next;
+#      }
+      ## skip empty responses
+      if(defined($rec->{'response'}->{'header'}->{'content-length'}) and
+	($rec->{'response'}->{'header'}->{'content-length'} == 0)) {
+	next;
+      }
+      my $header='WARC-'.$type.'-Digest';
+      #print Dumper $rec->{'warc_header'};
+      #print "$header\n";
+      my $digest=$rec->{'warc_header'}->{$header} // next;
+      if(not $digests->{lc($type)}->{$digest}) {
+	$digests->{lc($type)}->{$digest}=1;
+	next;
+      }
+      $digests->{lc($type)}->{$digest}++;
+    }
+  }
+  $w->{'digests'}=$digests;
+  return $digests;
 }
 
 ## remove data that is not required after parsing
@@ -257,6 +338,8 @@ sub clean {
     delete $rec->{'count_last_blank_lines'};
     delete $rec->{'closed'};
   }
+  ## for determining unique payloads
+  undef $w->{'known_digests'};
   return ;
 }
 
@@ -313,7 +396,7 @@ sub payloads {
       }
       else {
 	print $w->{'file'},"\n";
-	die Dumper $rec->{'response'}->{'header'};
+	confess Dumper $rec->{'response'}->{'header'};
       }
     }
     if($pl_type ne '_') {
@@ -328,6 +411,8 @@ sub payloads {
     $pl->[$count_pl]->{'start'}=$rec->{'start_payload_byte'};
     $pl->[$count_pl]->{'length'}=$rec->{'payload_length'};
     $pl->[$count_pl]->{'date'}=$rec->{'warc_header'}->{'WARC-Date'};
+    $pl->[$count_pl]->{'digest'}->{'payload'}=$rec->{'warc_header'}->{'WARC-Payload-Digest'};
+    $pl->[$count_pl]->{'digest'}->{'block'}=$rec->{'warc_header'}->{'WARC-Block-Digest'};
     $pl->[$count_pl]->{$origin}=$value;
     $pl->[$count_pl]->{'warc'}=$w->{'file'};
     $count_pl++;
@@ -376,6 +461,8 @@ sub resources {
     $re->[$count_re]->{'date'}=$rec->{'warc_header'}->{'WARC-Date'};
     $re->[$count_re]->{$origin}=$value;
     $re->[$count_re]->{'warc'}=$w->{'file'};
+    $re->[$count_re]->{'digest'}->{'payload'}=$rec->{'warc_header'}->{'WARC-Payload-Digest'};
+    $re->[$count_re]->{'digest'}->{'block'}=$rec->{'warc_header'}->{'WARC-Block-Digest'};
     $count_re++;
   }
   $w->{'resources'}->{$re_type}=$re;
@@ -492,7 +579,51 @@ sub get_pdfs {
   return $w->{'pdfs'};
 }
 
+## gets pdfs, first by trying the direct route, then the indirect one
+sub get_unique_pdfs {
+  my $w=shift;
+  undef $w->{'pdfs'};
+  my $pdfs;
+  ## FixMe, this should be globally set
+  my @digest_types=('block','payload');
+  ## FixMe: this mixes block and payload digests, for ftp security
+  my $known_digests={};
+  $pdfs=$w->payloads('application/pdf','Futli');
+  foreach my $pdf (@$pdfs) {
+    $w->has_known_digest($pdf) and next;
+    push(@{$w->{'pdfs'}},$pdf);
+  }
+  $pdfs=$w->resources('_','application/pdf','Futli');
+  foreach my $pdf (@$pdfs) {
+    $w->has_known_digest($pdf) and next;
+    push(@{$w->{'pdfs'}},$pdf);
+  }
+  return $w->{'pdfs'};
+}
 
-
+sub has_known_digest {
+  my $w=shift;
+  ## arrayref of payload or resource
+  my $in=shift // confess "I need this here.";
+  if(not ref($in) eq 'HASH') {
+    confess "I need an hashref here.";
+  }
+  ## FixMe, this should be globally set
+  my @digest_types=('block','payload');
+  my $has_known=0;
+  foreach my $digest_type (@digest_types) {
+    my $digest=$in->{'digest'}->{$digest_type} or next;
+    if($w->{'known_digests'}->{$digest}) {
+      #print "This is NOT new.\n";
+      $has_known=1;
+    }
+    else {
+      #print "This is new.\n";
+      $w->{'known_digests'}->{$digest}=1;
+      #print Dumper $w->{'known_digests'};
+    }
+  }
+  return $has_known;
+}
 
 1;

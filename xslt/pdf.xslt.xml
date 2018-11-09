@@ -1,0 +1,60 @@
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns="http://www.w3.org/1999/xhtml"
+                exclude-result-prefixes="#default">
+  <xsl:variable name="pdf_base"
+		select="'https://socionet.ru/pdfviewer.xml?h='"/>
+  <xsl:variable name="intr_prefix"
+		select="'spz:ranepa:intextrefs'"/>
+  <xsl:variable name="futli"
+		select="//futli/@url"/>
+  <xsl:variable name="mod_han">
+    <xsl:call-template name="three_colon_to_underscore">
+      <xsl:with-param name="in"
+		      select="$papid"/>
+    </xsl:call-template>
+  </xsl:variable>
+  <xsl:variable name="link_phrase"
+		select="'check this data at PDF'"/>
+  <xsl:template name="three_colon_to_underscore">
+    <xsl:param name="in"/>
+    <xsl:variable name="cut_0"
+		  select="$in"/>
+    <xsl:variable name="cut_1"
+		  select="substring-after($cut_0,':')"/>
+    <xsl:variable name="cut_2"
+		  select="substring-after($cut_1,':')"/>
+    <xsl:variable name="cut_3"
+		  select="substring-after($cut_2,':')"/>
+    <xsl:variable name="cut_4"
+		  select="substring-after($cut_3,':')"/>
+    <xsl:variable name="part_1"
+		  select="substring-before($cut_0,':')"/>
+    <xsl:variable name="part_2"
+		  select="substring-before($cut_1,':')"/>
+    <xsl:variable name="part_3"
+		  select="substring-before($cut_2,':')"/>
+    <xsl:variable name="part_4"
+		  select="substring-before($cut_3,':')"/>
+    <xsl:value-of select="$part_1"/>
+    <xsl:text>_</xsl:text>
+    <xsl:value-of select="$part_2"/>
+    <xsl:text>_</xsl:text>
+    <xsl:value-of select="$part_3"/>
+    <xsl:text>_</xsl:text>
+    <xsl:value-of select="$cut_3"/>
+  </xsl:template>
+  <xsl:variable name="link_start">
+    <xsl:value-of select="$pdf_base"/>
+    <xsl:value-of select="$papid"/>
+    <xsl:text>&amp;file=</xsl:text>
+    <xsl:value-of select="$futli"/>
+    <xsl:text>&amp;ref=</xsl:text>
+    <xsl:value-of select="$prefix"/>
+    <xsl:call-template name="three_colon_to_underscore">
+      <xsl:with-param name="in"
+                      select="$papid"/>
+    </xsl:call-template>
+    <xsl:text>_</xsl:text>
+  </xsl:variable>
+</xsl:stylesheet>

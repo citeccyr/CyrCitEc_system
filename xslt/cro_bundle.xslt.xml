@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns="http://www.w3.org/1999/xhtml"
+                exclude-result-prefixes="#default">
+  <xsl:include href="common_bundles.xslt.xml"/>
+  <xsl:include href="intextref.xslt.xml"/>
+  <xsl:variable name="title">
+    <xsl:text>Papers coreferenced with&#32;</xsl:text>
+    <xsl:value-of select="$vic_cite"/>
+  </xsl:variable>
+  <xsl:template name="cros_bundles">
+    <h1>
+      <xsl:value-of select="$title"/>
+    </h1>
+    <p>
+      <xsl:text>&#10;</xsl:text>
+      <xsl:text>Total coreferenced papers:&#32;</xsl:text>
+      <xsl:value-of select="count(/bundle/crorfs/crorf/reference)"/>
+    </p>
+    <ul>
+      <xsl:text>&#10;</xsl:text>
+      <xsl:for-each select="/bundle/crorfs/crorf/reference">
+	<xsl:sort select="concat(normalize-space(./@author),normalize-space(./@year),normalize-space(./@title))" data-type="text" order="ascending"/>
+	<xsl:variable name="anchor">
+	  <span>
+	    <xsl:if test="./@bundle">
+	      <xsl:attribute name="title">
+		<xsl:value-of select="./@bundle"/>
+	      </xsl:attribute>
+	    </xsl:if>
+	    <xsl:value-of select="normalize-space(./@author)"/>
+	    <xsl:text>&#32;(</xsl:text>
+	    <xsl:value-of select="normalize-space(./@year)"/>
+	    <xsl:text>)&#32;“</xsl:text>
+	    <xsl:value-of select="normalize-space(./@title)"/>
+	    <xsl:text>”</xsl:text>
+	  </span>
+	</xsl:variable>
+	<li>
+	  <xsl:choose>
+	    <xsl:when test="./@doi">
+	      <a>
+		<xsl:attribute name="herf">
+		  <xsl:value-of select="$doi_linker"/>
+                  <xsl:value-of select="./@doi"/>
+		</xsl:attribute>
+		<xsl:value-of select="$anchor"/>
+	      </a>
+	    </xsl:when>
+	    <xsl:otherwise>
+	      <xsl:value-of select="$anchor"/>
+	    </xsl:otherwise>
+	  </xsl:choose>
+	</li>
+	<xsl:text>&#10;</xsl:text>
+      </xsl:for-each>
+    </ul>
+    <p>
+      <xsl:text>Common contexts</xsl:text>
+    </p>
+    <ul>
+      <xsl:for-each select="/bundle/ref">
+	<xsl:variable name="found_in"
+		      select="./@found_in"/>
+	<xsl:if test="//crorf[starts-with(@refid,$found_in)]">
+	  <li>
+	    <xsl:variable name="paper_count"
+			  select="count(//crorf[starts-with(@refid,$found_in)])"/>
+	    <xsl:variable name="add_paper_count"
+			  select="$paper_count + 1"/>
+	    <dl>
+	      <dt>Prefix</dt>
+	      <dd>
+		<xsl:value-of select="./intextref/Prefix"/>
+	      </dd>
+	      <dt>
+		<xsl:text>Coreferenced papers&#32;</xsl:text>
+		<xsl:value-of select="$add_paper_count"/>
+		<!--		<xsl:choose> -->
+		<!--		  <xsl:when test="$add_paper_count = 1"> -->
+		<!--		    <dt>One paper</dt> -->
+		<!--		  </xsl:when> -->
+		<!--		  <xsl:otherwise> -->
+		<!--		    <xsl:call-template name="english_number_uppercase"> -->
+		<!--		      <xsl:with-param name="in" -->
+		<!--				      select="$add_paper_count"/> -->
+		<!--		    </xsl:call-template> -->
+		<!--		    <xsl:text>&#32;papers</xsl:text> -->
+		<!--		  </xsl:otherwise> -->
+		<!--		</xsl:choose> -->
+	      </dt>
+	      <dd>
+		<ul>
+		  <li>
+		    <xsl:value-of select="$vic_cite"/>
+		  </li>
+		  <xsl:for-each select="//crorf[starts-with(@refid,$found_in)]">
+		    <li>
+		      <xsl:value-of select="./reference/from_pdf"/>
+		    </li>
+		  </xsl:for-each>
+		</ul>
+	      </dd>
+	      <dt>Suffix</dt>
+	      <dd>
+		<xsl:value-of select="./intextref/Suffix"/>
+	      </dd>
+	    </dl>
+	  </li>
+	</xsl:if>
+      </xsl:for-each>
+    </ul>
+  </xsl:template>
+  <xsl:template match="/">
+    <xsl:call-template name="page">
+      <xsl:with-param name="title"
+		      select="$title"/>
+      <xsl:with-param name="body">
+	<xsl:call-template name="cros_bundles"/>
+      </xsl:with-param>
+      <xsl:with-param name="css_data">
+	<xsl:copy-of select="$css"/>
+      </xsl:with-param>
+    </xsl:call-template>
+  </xsl:template>
+</xsl:stylesheet>

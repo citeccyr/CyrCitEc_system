@@ -1,11 +1,15 @@
 #!/usr/bin/perl
 
+
+
 use Getopt::Std;
-getopts('Jjnb:s:');
+getopts('JKjnNb:s:');
 
 ##(?? no.) if we have no option to sea
 my $SPHINX_SEARCH;
 my $db_file = $opt_b // '/var/hhome/_sphinx/handle.db';
+my $K_flag = $opt_K;
+ $K_flag = 1;  # uncomment @TKversion
 
 if( -r $db_file ) {
 	use DB_File;
@@ -18,10 +22,12 @@ if( -r $db_file ) {
 $jfile = shift;
 die <<EE unless $jfile;
 recitex.pl - references and citation extraction
-usage: recitex.pl [-Jjn] [-b spx_db_file] [-s spx_ip:port] path/file[.json] [source_handle]
+usage: recitex.pl [-JKjn] [-b spx_db_file] [-s spx_ip:port] path/file[.json] [source_handle]
 	-j -- dump source text extracted from json
 	-J -- dump source text extracted from json, rearranged properly
+	-K -- TK output format
 	-n -- do not find citations, make reference list only
+	-N -- do not rearrange json text
 	-s -- Sphinx address:port,
 	-b -- db file to convert Sph answer to handle, assoc. with the reference
 EE
@@ -39,11 +45,20 @@ $cyr_r = decode( "utf8", $cyr_r = "рр?", Encode::FB_CROAK );
 $pp = "\\b(pp?|$cyr_r|$cyr_s|c)\\.?\\s*[\\d$dashs]+";
 
 # "et al" template:
-$etal = "(:?\\bet\\s+al\\b\\.?|\\bи\\s+др\\b\\.?)";
+$etal = "(?:\\bet\\s+al\\b\\.?|\\bи\\s+др\\b\\.?)";
 $etal = decode("utf8", $etal, Encode::FB_CROAK );
+
+# "and/," template:
+$and_or_comma = "\\s*(?:,\\s*|\\band\\s+|\\bи\\s+)";
+$and_or_comma = decode("utf8", $and_or_comma, Encode::FB_CROAK );
+
+# Da De Den Der
+$dade = "(?:[Dd][ae]|[Dd]e[nr])";
 
 $nbsp = pack( "C", 0xa0 );
 $nbsp = decode("cp1251", $nbsp, Encode::FB_CROAK );
+
+$RLEN = 800;    # 20181023 successive S.Parinov's rule
 
 $jfile .= ".json" if $jfile !~ /\.j\w*$/i;
 j2str( $jfile );        # --> @lines: [@transform,offset,str,pageNo] -- [0-8].
@@ -68,6 +83,16 @@ if( open( M, "< :encoding(utf8)", "/work/ftp/socionet/$dir/$file.xml") ) {
 			s/\s+$//s;
 			if( s/\s+<reference num="\d+".*?>\s+//s ) { $_ } else {}
 		} split /<\/reference>/s, $1;
+	}
+	if( s,<Date>(.*?)</Date>,,s ) {
+		$date = $1;
+		if( $date =~ m,<Creation>(.*)</Creation>,
+		 || $date =~ m,<Entry>(.*)</Entry>, ) {
+			$datecr = $1;
+		}
+		if( $date =~ m,<Change>(.*)</Change>, ) {
+			$dateup = $1;
+		}
 	}
 	$fc = defined $source_handle ? 1 : 0;
 	while( s,<([-\w]+).*?>(.*?)<,<,s ) {
@@ -102,26 +127,36 @@ if( open( M, "< :encoding(utf8)", "/work/ftp/socionet/$dir/$file.xml") ) {
 	if( m,<attr\s+id="file-url">(.+?)</attr>, ) {
 		$file_url = $1;
 	}
+	if( /<attr id="entry-date">(\d{1,2})-(\d{1,2})-(\d{4})<\/attr>/ ) {
+		$datecr = "$3-".sprintf( "%02d", $2 )."-".sprintf( "%02d", $1 );
+	}
+	if( /<attr id="change-date">(\d{1,2})-(\d{1,2})-(\d{4})<\/attr>/ ) {
+		$dateup = "$3-".sprintf( "%02d", $2 )."-".sprintf( "%02d", $1 );
+	}
 } }
+$source_handle = "repec:$'" if $source_handle =~ /^repec:/is;
+($fu2 = $file_url) =~ s=.*://==;
 
 chomp($date = `date -u +%Y-%m-%dT%H:%M:%S.000000+00:00`);
+$datecr = $date unless $datecr;
+$dateup = $date unless $dateup;
 
 print <<EE;
 <?xml version='1.0' encoding='utf-8'?>
 <document  id="$file"
  type="citmap"
- updated="$date"
- created="$date"
+ updated="$dateup"
+ created="$datecr"
  provider="RANEPA, CitEcCyr project" 
 >
 
   <source handle="$source_handle"
 	  file="$file_url">
     <text rich="http://no-xml.socionet.ru/~cyrcitec/j-$dir/$file.json">
-     <input data="http://no-xml.socionet.ru/~cyrcitec/j-$dir/$file.pdf">
+     <input data="http://no-xml.socionet.ru/~cyrcitec/pdf-cache/$fu2">
 EE
 
-# V4: embed jfmt.pl
+# V4: embedded jfmt.pl
 
 $pos = $line = $ppnum = 0;
 
@@ -132,8 +167,17 @@ while( ($offset, $str, $x, $x, $axes, $x, $horz, $vert, $pnum ) = @{shift @lines
 
 	if( $ppnum == $pnum &&
 	    abs($vpix[$line] - $vert) < 5.5 ) { # same line
-		$txt[$line] .= $str;
-		$src .= $str;
+#20180627:
+		if( $horz < $hpix[$line] ) {
+# see rua/wpaper/a:pmu374:1.json !!! Palliative...
+			substr $src, -length($txt[$line]), 0, $str;
+			$txt[$line] = $str . $txt[$line];
+			$hpix[$line] = $horz;
+		} else {
+#20180627/
+			$txt[$line] .= $str;
+			$src .= $str;
+		}
 	} else {                                # new line
 		$ppnum = $pnum;
 		++ $line;
@@ -173,14 +217,18 @@ $pos2line[$pos] = $line;
 $posmap[$pos] = $offset;
 
 if( $opt_j ) {
-  print8( $src );
-  exit;
+	my $lc = 0;
+	map{ print8( ++$lc . ":" . $_ . "|\n" ); } split( "\n", $src );
+	exit 0;
 }
 
+goto SKIP_REARRANGE if $opt_N;
+# Sometimes 'jsonizator' reshuffles the data, though keeps their coordinates.
+# First case met: j-neicon/agx/y:2012:i:4:p:13-17.json, see the headline of the ref list.
+# Trying to rearrange to restore the right order.
+# 20180923 false (and erroneous) rearrangment. Example: neicon/avia/y:2015:i:2:p:51-54
 
-# "�����������" ������.
 undef $src;
-
  $txt[$#txt] .= "\n";
  push @txt, ""; push @page, 99999; # very large N - experimental.
 $pno = 1;
@@ -189,36 +237,20 @@ $vmax = $vmin = $vpix[1];
 for $lno (2..$#txt) {
 # $src .= "---L:$lno,P:$pno,?:$page[$lno]:$txt[$lno]";
 
-=v1:
-	if( $pno == $page[$lno] && $vmin >= $vpix[$lno] ) {     # same page, same blk
-		$vmin = $vpix[$lno];
-		next;
-	}
-# v2:
-	if( $pno == $page[$lno]                 # same page
-	 && $vmin >= $vpix[$lno]                # same or next line
-	 && ( int(@blk) == 0                    # no blocks yet at the page
-	    || $phmax <= $hpix[$lno] ) ) {
-		$vmin = $vpix[$lno];
-		$hmax = $hpix[$lno] if $hmax < $hpix[$lno];
-		next;
-	}
-=cut
-# v3:
 	if( $pno == $page[$lno]                 # same page
 	 && $vmin >= $vpix[$lno]                # same or next line
  && $vmin <= $vpix[$lno] + 60
  && $hpix[$lno] * 3 >= $hmax
 	 && ( int(@blk) == 0                    # no blocks yet at the page
-#            || $hpix[$lno] * 3 >= $hmax         # || �� �����
-	    || $phmax <= $hpix[$lno] )          #             � ������ �������
+#            || $hpix[$lno] * 3 >= $hmax         # || not reset ...
+	    || $phmax <= $hpix[$lno] )          #        ... to the 1st column
 	) {
 		$vmin = $vpix[$lno];
 		$hmax = $hpix[$lno] if $hmax < $hpix[$lno];
 		next;
 	}
 
-# new page or new blk
+# new blk [and possibly new page]
 	if( int(@blk) >= 1 ) {
 		($pbstart,$pvmax,$pvmin,$pbend) = @{ pop @blk };
 
@@ -246,13 +278,15 @@ for $lno (2..$#txt) {
 # $src .= "===Page:$pno,Nblk:".int(@blk).",L:$blk[0][0]--$blk[0][3]\n";
 # rearrange blks of previous page
 # $src .= "===$lno:NEWPAGE $page[$lno]\n";
-		# $p = ��������� ������� ��������
-		for $i (sort { int(($blk[$b][1] - $blk[$a][1])/3) } (0..$#blk)) {
+# print8( "===Page:$pno,Nblk:".int(@blk).",L:$blk[0][0]--$blk[0][3]\n===$lno:NEWPAGE $page[$lno]\n");
+		# $p = offset of the page
+		for $i (sort { int(($blk[$b][1] - $blk[$a][1])/3) }
+		(0..$#blk)) {
 			for $line ( $blk[$i][0] .. $blk[$i][3] ) {
 				$src .= $txt[$line];
 			}
-			#$pb = $lpos[ $blk[$i][0] ]; # ��������� ������� �����
-			#$pe = $lpos[ $blk[$i][3] ] + length $txt[ $blk[$i][3] ]; # ���������
+			#$pb = $lpos[ $blk[$i][0] ]; # offset of the block
+			#$pe = $lpos[ $blk[$i][3] ] + length $txt[ $blk[$i][3] ]; # end block offset
 			#while( ($posmap2[$p++] = $pb++) < $pe ) {}
 		}
 #
@@ -263,9 +297,11 @@ for $lno (2..$#txt) {
 }
 # print8( "X=== p$pno:blk". int(@blk) .":= $bstart,$vmax,$vmin;\n" );
 
+SKIP_REARRANGE:
 if( $opt_J ) {
- print8( $src );
- exit;
+	my $lc = 0;
+	map{ print8( ++$lc . ":" . $_ . "|\n" ); } split( "\n", $src );
+	exit 0;
 }
 
 
@@ -278,19 +314,20 @@ if( $opt_J ) {
 $ref_keyl1 = "references";
 push @ref_marker,
  "литература\\s*/\\s*references",
- "библиографический\\s*список",
- "библиографические\\s*ссылки",
- "список\\s*(:?использ(:?ованн|уем)ых)?\\s*источников",
- "список(:?\\s*использованной)?\\s*литературы",
+ "библиографически[ей]\\s*(?:список|ссылки)",
+ "список\\s*(?:использ(?:ованн|уем)ых)?\\s*источников",
+ "список(?:\\s*использованной)?\\s*литературы",
  "использованная\\s*л\\s*и\\s*т\\s*е\\s*р\\s*а\\s*т\\s*у\\s*р\\s*а",
  "библиография:?\\s*\$",
-  "русскоязычные\\s*источники\\s*\$",
+  "(?:использованные|русскоязычные)\\s*источники\\s*\$",
  "л\\s*и\\s*т\\s*е\\s*р\\s*а\\s*т\\s*у\\s*р\\s*а\\s*\$",
  "источники\\s*\$",
  $ref_keyl1;
 for $rk ( @ref_marker ) {
 	$rk = decode("utf8", $rk, Encode::FB_CROAK );
 	if( $src =~ /(.*)^([^[:alpha:]]*$rk [^\n]*)[\s\[]*1\b/imsux ) {
+#20180626
+ $ssrc //= $1;
 		$src = $1;
 		$rmk = $2;
 		$pos = length( $src ) + length( $rmk );
@@ -310,6 +347,8 @@ if( ! $match_type ) {
 	# $rk = decode("utf8", $rk, Encode::FB_CROAK );
 # *****!!! 'decode' leaves the result in it's 2nd argument?!!!
 	if( $src =~ /(.*)^([^[:alpha:]]*$rk\W*)/imsux ) {
+#20180626
+ $ssrc //= $1;
 		$src = $1;
 		$rmk = $2;
 		$pos = length( $src ) + length( $rmk );
@@ -334,7 +373,7 @@ if( $match_type )
 
 } else {
 	print <<EE;
-No references found (1)
+No reference start found (1)
      </input>
     </text>
    </source>
@@ -353,7 +392,7 @@ $notname = decode("utf8", $notname, Encode::FB_CROAK );
 goto UNNUM_REF if ! $enum;
 
 $refno = 1;
-if( $references !~ s/^[\s\[]*$refno[\s\]]*$dot\s*(([Vv][oa]n\s*|der?\s*)*([[:upper:]]))/$1/sx ) {
+if( $references !~ s/^[\s\[]*$refno[\s\]]*$dot\s*(?:(?:[Vv][oa]n\s*(?:'t\s+)?|$dade\s*)*(\b[[:upper:]]))/$1/sx ) {
 	print <<EE;
 No references found (2)
      </input>
@@ -365,13 +404,13 @@ EE
 }
 $pos1 = $pos + length( $& ) - 1; # -> to the beginning of the ref 1
 #$pos1 = $pos + length( $& )    ; # -> to the beginning of the ref 1
-# print "===POS1:$pos1->$posmap[$pos1]:", substr($references, 0, 500), "\n"; #exit;
+# print "===DOT:$dot;POS1:$pos1->$posmap[$pos1]:", substr($references, 0, $RLEN), "\n"; #exit;
 $pos = $pos1;
 print "      <linking enum=\"1\">\n";
 $refno = 2;
-$re1 = $references =~ /(.*?)^[\s\[]*$refno[\s\]]*$dot\W*(([Vv][oa]n\s*|der?\s*)*([[:upper:]]))/msx ? 1 : 0;
-# -- reference starts from the beginning of the line
-# print "===re1:$re1\n"; exit;
+$re1 = $references =~ /(.*?)^[\s\[]*$refno[\s\]]*$dot\W*(([Vv][oa]n\s*('t\s+)?|$dade\s*)*(\b[[:upper:]]))/msx ? 1 : 0;
+# -- reference starts from the beginning of the line                                    \_+ -- wrong
+# print "===re1:$re1//$&\n";  exit;
 $dopreref = 1;
 while(
 	$re1 &&
@@ -380,41 +419,51 @@ while(
 	$references =~ s/(.*?) [\s\[]+$refno[\s\]]*$dot\W*//msx
 ) {
 	$title = $1;
-	$pos1 = $pos + length( $& );
+	$pos1 = length( $& );
 	last if $done = $dopreref? prref( $refno-1, $title, $pos ) : 0;
-# print8( "===R ".substr($references, 0, 500)."\n===\n" );
-	if( $references =~ s/^([Vv][oa]n\s*|der?\s*)*([[:upper:]])/$2/sx
-     ||         # false $refno match, search further
-	$references =~ s/^[\s\[]*$refno[\s\]]*$dot\W*(([Vv][oa]n\s*|der?\s*)*([[:upper:]]))/$2/msx
-     ||
-	$references =~ s/ [\s\[]+$refno[\s\]]*$dot\W*(([Vv][oa]n\s*|der?\s*)*([[:upper:]]))/$2/msx
+#20181025 back        last if $pos1 > $RLEN;    # 20181023 2-nd Parinov's rule: no more than $RLEN chars
+	$pos1 += $pos;
+# print8( "===R ".substr($references, 0, 800)."\n===\n" );
+	if( $references =~ s/^(?:[Vv][oa]n\s*(?:'t\s+)?|$dade\s*)*(\b[[:upper:]])/$1/sx
+# Prevoo  M.L.,  van't  Hof  M.A.,  Kuper  H.H.,
+
+#     ||         # false $refno match, search further
+#        $references =~ s/^[\s\[]*$refno[\s\]]*$dot\W*(([Vv][oa]n\s*('t\s+)?|$dade\s*)*(\b[[:upper:]]))/$4/msx
+# 20180918:             .*{,N}^... ?
+#     ||
+#        $references =~ s/ [\s\[]+$refno[\s\]]*$dot\W*(([Vv][oa]n\s*('t\s+)?|$dade\s*)*(\b[[:upper:]]))/$4/msx
+# 20180918 X! see hig:wpaper:06-law-2012
 #>>>
 	) {
 		$pos1 += length( $& ) - 1; # -> to the beginning of the next ref
-#print8( "===PRREF <$1:$2>" . ($refno-1) . " $title $pos\n" );
+# print8( "===PRREF <$1:$2>" . ($refno-1) . " $title $pos\n" );
+	} #20180918
 		$dopreref = 1;
-	} else {
-		$dopreref = 0;
-	}
+#         else {
+#                 $dopreref = 0;
+#         }
+# 20180918
 	$pos = $pos1;
 	++ $refno;
 }
-# print "===endloop,R:",substr($references, 0, 500), "\n"; exit;
+# print "===endloop,R:",substr($references, 0, $RLEN), "\n"; exit;
 # printf "=== len: %d; pos: $pos; line: $pos2line[$pos]; page: $page[$pos2line[$pos]]\n", length($references);
 # Parinov's rule for the last ref: no more than 4 lines:
-for( $i = 0; $i < length($references); ++ $i ) {
-	last if $pos2line[$pos]+4 < $pos2line[$pos+$i];
-}
+# 20181023: + no more than $RLEN chars
+#20181025 back $references = substr( $references, 0, $RLEN );
+if( ! $done ) {
+	for( $i = 0; $i < length($references); ++ $i ) {
+		last if $pos2line[$pos]+4 < $pos2line[$pos+$i];
+	}
 # printf "=== 4th line pos: $i; line: $pos2line[$pos+$i]; page: $page[$pos2line[$pos+$i]]\n";
-prref( $refno-1, substr( $references, 0, $i ), $pos )   unless $done;
+	prref( $refno-1, substr( $references, 0, $i ), $pos );
+}
 goto SNOSKI;
-
 
 
 UNNUM_REF:;    ####### Unnumbered references
 print "      <linking enum=\"0\">\n";
 
-$pos += length( $` ) if $references =~ m/((([[:alpha:]$dashs]){2,}\s)(\s*[[:alpha:]]{1,2}\.){1,3}[,\s]*)+/sxu;
 $refno = 0;
 while(
 	$references =~ m/^(([[:upper:]]([[:alpha:]'$dashs])+,?\s)(\s*[[:alpha:]]{1,2}\.){1,3}[,\s]*)+/msxu
@@ -457,13 +506,18 @@ No references found (3)
 EE
 	exit 3;
 } #else
-$a0 .= $references;
+if( ! $done ) {
+	$a0 .= $references;
 # Parinov's rule of 4 lines:
-for( $i = 0; $i < length($a0); ++ $i ) {
-	last if $pos2line[$pos0]+4 < $pos2line[$pos0+$i];
+# --- 20181023: + rule of $RLEN chars
+#20181025 back        $a0 = substr( $a0, 0, $RLEN );
+	for( $i = 0; $i < length($a0); ++ $i ) {
+		last if $pos2line[$pos0]+4 < $pos2line[$pos0+$i];
+	}
+	prref( ++ $refno, substr( $a0, 0, $i ), $pos0 );
 }
 
-prref( ++ $refno, substr( $a0, 0, $i ), $pos0 ) unless $done;
+
 
 SNOSKI:;
 print <<EE;
@@ -486,7 +540,7 @@ EE
 # search citations in the text.
 # 1) like "[rnums]"; rnums ::= rnum | rnum-rnum | rnum,rnums; rnum ::= N[text]M
 
-$ssrc = $src;
+# $ssrc = $src;
 goto UNNUM_CIT
 		 unless $enum
 ;
@@ -494,21 +548,44 @@ goto UNNUM_CIT
 $pos = 0;
 $srcl = "";
 while( $src =~ /\[([^\]]{1,100})\]/s ) {
-	$pref = $`;
+	$pos += length $`;      # position of 'EXACT'
+	$srcl .= $`;            # Left part of src
 	$exact = $&;
 	$ref = $1;
 	$src = $';
-	$pos += length $pref;
-	$srcl .= $pref;
 
-	$suff = substr $src, 0, 200;
-	if( $src =~ /^(.{200,}?[.?!])\W*[[:upper:]]/s ) {
-		$suff = $1;
-	}                  # *
+# 20181017
+	$suff = $src =~ /^(.{200,}?[.?!])\W*[[:upper:]]/s ? $1 : $src;
+#...        $suff =~ s/^\W*//s;
+	$suff =~ s/-\n//gms;
+	$suff = substr $suff, 0, 400;
+	$suff = eent( $suff );
+
+# srcl := 200+ chars in front of EXACT, sentence boundary aligned:
 	while( $srcl =~ /[.?!]\s+(\W*[[:upper:]])/s && length( $' ) >= 200 ) {
 		$srcl = $1.$';
 	}
-	($pref = $srcl) =~ s/^\s+//s;
+# 20181021 do not let the prefix to expand to the previous page:
+	$epage = $page[$pos2line[$pos]];
+	$prefpos = $oprefpos = $pos - length $srcl;
+# print8( "===EPOS:$pos;EPOSM:".$posmap[$pos].";EPAGE:$epage;OLDprefpos:$oprefpos;\n" );
+# print8( "===SRCL:$srcl\n" );
+	while( $epage > $page[$pos2line[$prefpos]] ) {
+# print8( "===LINE($prefpos):$pos2line[$prefpos]:".substr($srcl,$prefpos,11).";\n" );
+		++ $prefpos;
+	}
+# print8( "===PREFPOS:$prefpos;PREFPOSM:".$posmap[$prefpos].";OLDprefpos:$oprefpos;\n" );
+# print8( "===substr $srcl, $prefpos -= $oprefpos\n" );
+	$pref = substr $srcl, ($prefpos -= $oprefpos);
+#/20181021
+	$pref =~ s/-\n//gms;
+# $pref : no more than 400, word boundary aligned:
+	$pref = substr $pref, -400;
+	$pref =~ s/^.+?\b//s if length $pref == 400;
+#/
+	$pref = eent( $pref );
+#/20181017
+
 	$srcl .= $exact;
 
 	$start = $posmap[$pos];
@@ -521,17 +598,15 @@ while( $src =~ /\[([^\]]{1,100})\]/s ) {
 	}
 	$pos = $pos1;
 
-	$pref = eent( $pref );
-	   $pref =~ s/-\n//gms;
 	$exact = eent( $exact );
-	$suff = eent( $suff );
-	   $suff =~ s/-\n//gms;
 
+	$ref =~ s/\n//gisx;
 	$ref =~ s/$pp//gisx;
-# print "1===$ref\n";
+# print8( "1===$ref\n" );
 #        next if $exact =~ /[[:alpha:]]/;
 	$ref =~ s/[[:alpha:]]//gs;
 	@rlist = map{
+# print8( "====$_|\n" );
 		if( /\s/ ) {}
 		elsif( /[$dashs]/ ) {
 			int($`) < int($')?
@@ -540,7 +615,7 @@ while( $src =~ /\[([^\]]{1,100})\]/s ) {
 			int($_);
 		}
 	} split /\s*[;,]\s*/, $ref;
-# print "===",join("//",@rlist),"|\n";
+# print8( "===".join("//",@rlist)."|\n" );
 	next if ! @rlist;
 	next if grep { $_ < 1 || $_ >= $refno } @rlist;
 	if( ! $itr++ ) {
@@ -585,8 +660,8 @@ EE
 
 
 UNNUM_CIT:;
-# 2) search citations like (Author[,year]) | ...
-# if enum == 0 or (1) did not succeed.
+# 2) if enum == 0 or (1) did not succeed --
+#    search citations like (Author[,year]) | ...
 $pos = 0;
 $src = $ssrc; undef $ssrc;
 print <<EE;
@@ -596,31 +671,127 @@ EE
 $n_match = join( "|", @n_match );
 # @n_match - list of templates built from the reference list.
 
-# print encode( "utf8", "$n_match\n", Encode::FB_CROAK ); exit;
+# print8( "$n_match\n" ); # exit;
 $srcl = "";
-while( $src =~ /[\[\(]?($n_match)[\.\s]*(:?$pp)?[\]\)]?/isx ) {
-	$pref = $`;
+while( $src =~ /[\[\(]?($n_match)[\.\s]*([:\s]*$pp | [,\d\s]*)?[\]\)]?/isx )
+# while( $src =~ /[\[\(]?($n_match)[\.\s]*(:?$pp | [,\d\s]*)?[\]\)]?/isx )        # ?: ?
+{
+	$pos += length $`;      # position of 'EXACT'
+	$srcl .= $`;            # Left part of src
 	$exact = $&;
 	$ref = $1;
 	$src = $';
-	$pos += length $pref;
-	$srcl .= $pref;
 
-# which template matched?
-	for( $nr = 0; $nr < @n_match; ++ $nr ) {
-		last if $exact =~ /$n_match[$nr]/;
+# which template matchs?
+# 20180622 there could be > 1
+# 20180704 choose one whith the longest matching string
+	undef @nr;
+# !!!!!
+#
+	($exact2 = $exact . substr $src, 0, 40 ) =~ s/([\]\);]).*/$1/s;
+#print8( "===E:$exact>>>$exact2|\n" );
+
+	$exact3 = $exact2;
+	undef @exact3;
+	if( $exact2 =~ /(\d{4})/ ) {
+		my $l = $`;
+		my $r;
+		$exact2 = $&.$';
+		if( $exact2 =~ /.*\d{4}[a-z,]*/ ) {
+			$exact2 = $&;
+			$r = $';
+		}
+		while( $exact2 =~ s/(\d{4})([a-z,]*) //x ) {
+			$y = $1;
+			($a = $2) =~ s/,$//;
+# print "$y--$a|\n";
+			for( split /,/, $a ) {
+				push @exact3, $l . $y . $_ . $r;
+# print "1===", $nr[$#nr],"\n";
+			}
+			push( @exact3, $l . $y . $r ) if $a !~ /,/;
+# print "2===", $nr[$#nr],"\n" if $a !~ /,/;
+		}
 	}
-# print encode( "utf8", "===M:$nr+1==$n_match{ $n_match[$nr] }:$n_match[$nr]//\n===E:$exact//\n===R:$ref//\n", Encode::FB_CROAK );
-	++ $nr;
 
-	$suff = substr $src, 0, 200;
-	if( $src =~ /^(.{200,}?[.?!])\W*[[:upper:]]/s ) {
-		$suff = $1;
-	}                  # *
+
+# print join( "\n", @exact3 ), "\n";
+
+
+
+=treisman
+===(:?Treisman,?\s*\(?(:?\s*\d{4}[[:alpha:],]*)*?\s*1996a\)?)
+===(:?Treisman,?\s*\(?(:?\s*\d{4}[[:alpha:],]*)*?\s*1996b\)?)
+===(:?Treisman,?\s*\(?(:?\s*\d{4}[[:alpha:],]*)*?\s*1997\)?)
+						!
+===Treisman (--1996--a,b,-- 1997)
+===Treisman (1996a,1996b, 1997)
+Err: no match for "7059:Treisman (1996a,";
+===Treisman  (--1996--a,b,--  1997)
+===Treisman  (1996a,1996b,  1997)
+Err: no match for "22094:Treisman  (1996a,";
+=cut
+
+
+
+
+
+	undef $lmlen;
+	undef $lmatch;
+	for( $nr = 0; $nr < @n_match; ++ $nr ) {
+
+		if( @exact3 ) {
+			map{ if( /$n_match[$nr]/ ) { push @nr, $nr+1; } } @exact3;
+		} elsif( $exact3 =~ /$n_match[$nr]/ ) {
+			#if( length $& > $lmlen ) {
+			#        $lmatch = $&;
+			#        $lmlen = length $lmatch;
+			#}
+#print8( "===M:$n_match[$nr]; S:$&;\n" );
+			push @nr, $nr+1;
+		}
+	}
+  $lmlen = length $exact2;
+	if( ! @nr ) {
+		print stderr "Err:$source_handle: no match for \"$pos:$exact\";\n";
+		next;
+	}
+	if( ($d = $lmlen - length $exact) > 0 ) {
+		substr $src, 0, $d, "";
+  #              $exact = $lmatch;
+	}
+#/!!!!!
+
+# 20181017
+	$suff = $src =~ /^(.{200,}?[.?!])\W*[[:upper:]]/s ? $1 : $src;
+#...        $suff =~ s/^\W*//s;
+	$suff =~ s/-\n//gms;
+	$suff = substr $suff, 0, 400;
+	$suff = eent( $suff );
+
+# srcl := 200+ chars in front of EXACT, sentence boundary aligned:
 	while( $srcl =~ /[.?!]\s+(\W*[[:upper:]])/s && length( $' ) >= 200 ) {
 		$srcl = $1.$';
 	}
-	($pref = $srcl) =~ s/^\s+//s;
+
+# 20181021 do not let the prefix to expand to the previous page:
+	$epage = $page[$pos2line[$pos]];
+	$prefpos = $oprefpos = $pos - length $srcl;
+
+	while( $epage > $page[$pos2line[$prefpos]] ) {
+		++ $prefpos;
+	}
+
+	$pref = substr $srcl, ($prefpos -= $oprefpos);
+#/20181021
+	$pref =~ s/-\n//gms;
+# $pref : no more than 400, word boundary aligned:
+	$pref = substr $pref, -400;
+	$pref =~ s/^.+?\b//s if length $pref == 400;
+#/
+	$pref = eent( $pref );
+#/20181017
+
 	$srcl .= $exact;
 
 	$start = $posmap[$pos];
@@ -633,21 +804,21 @@ while( $src =~ /[\[\(]?($n_match)[\.\s]*(:?$pp)?[\]\)]?/isx ) {
 	}
 	$pos = $pos1;
 
-	$pref = eent( $pref );
-	   $pref =~ s/-\n//gms;
 	$exact = eent( $exact );
-	$suff = eent( $suff );
-	   $suff =~ s/-\n//gms;
 
 # print "=== EXACT:$exact;\n";
-	print encode('UTF-8', <<EE, Encode::FB_CROAK) ; #if $snoska{$_};
+		print encode('UTF-8', <<EE, Encode::FB_CROAK) ; #if $snoska{$_};
 	<intextref>
 	  <Prefix>$pref</Prefix>
 	  <Suffix>$suff</Suffix>
 	  <Start>$start</Start>
 	  <End>$end</End>
-	  <Exact>$exact</Exact>
-	  <Reference>$nr</Reference>
+	  <Exact>$exact3</Exact>
+EE
+	map{ print <<EE } @nr;
+	  <Reference>$_</Reference>
+EE
+	print <<EE;
 	</intextref>
 
 EE
@@ -662,6 +833,8 @@ print <<EE;
 </document>
 EE
 
+exit 0;
+
 sub eent {
 	my $t = shift;
 	$t =~ s/&amp;/&/g;
@@ -673,51 +846,81 @@ sub eent {
 
 sub prref {
 	my( $num, $title, $start, $end, $author, $year ) = @_;
-# print "===prref $num, $title;\n";
-# print "===A:$title;\n";
 	chomp $title;
-	@year = ($title =~ /\b\d{4}\b/gs);
-	$year = join " | ", map{ if( length == 4 && /^1[89]|^20/
-				&& ! $year{$_}++ ) { $_ } else {} } @year;
-	undef %year;
 
-	$title =~ s/&amp;/&/g;
-	$title =~ s/&/&amp;/g;
-	$title =~ s/</&lt;/g;
-	$title =~ s/>/&gt;/g;
 	$title =~ s/\f.*//s;
-	$title =~ s/ *-\n//gs;
-	$title =~ s/\n/ /gs;
-# print "===A:$title;\n";
-	my $i, $from_pdf = $title;
+# print8( "===A:$title;\n" ); return 0;# exit;
+	my( $from_pdf, $i, $doi ) = $title;
+#20180530 doi:
+	if( $title =~ s=\b(doi:\W* | (?:https?:\W*//\s*)?(?:dx\.\s*)?doi\.\s*org/\s*
+			  ) (10\s*\.\d{4,}[^<"']{2,80}).*==isx )
+	{
+		$doi = $2;
+		$doi =~ s/[\.\s]*\b(pmid|url):.*//is; # 20180926-27
+		$doi =~ s/\s+//gs;
+		$doi =~ s/\.+$//s;      # thnx TK
+		$doi = "\n    doi=\"$doi\"";
+	}
 
 	$end = $start - 1 + length $title;
     #? $title =~ s/\b(van|von|der?|...)\b//gis   ?
 # print "===$num:E-S:",$end-$start," TL:", length($title),"\n"; return;
-	# 8. Preston A,Johnston D. The Future of
-	# if( $title =~ /^((([[:alpha:]$dashs]){2,},?\s)(\s*[^\d\W]{1,2}\.){1,3}[,\s]*)+/sxu
 
-	if( $title =~ /^( (?:[Vv][oa]n\s*|der?\s*)*
-			  (?: [[:upper:]] (?:[[:alpha:]'$dashs])+,?\s )
-			  (?:\s*[[:alpha:]]{1,2}\.){1,3}(and|,|\s)* )+/sxu
-#                        van der Lugt N.M., van Kampen A., Walther  F.J.,...
+# 20180921: find 'year' after 'doi' removal --S.Parinov
+	@year = ( $title =~ /\b\d{4}[[:alpha:]]?\b/gs );
+	$year = join " | ", map{ if( (length == 4 || length == 5) && /^1[89]|^20/
+				&& ! $year{$_}++ ) { $_ } else {} } @year;
+# print8( "===Y:$year;\n" );
+	undef %year;
+
+# 20180924: same with folding   --S.Parinov
+	$title =~ s/ *-\n//gs;
+	$title =~ s/\n/ /gs;
+#/
+
+	# 8. Preston A,Johnston D. The Future of
+	# if( $title =~ /^((([[:alpha:]$dashs]){2,},?\s)(\s*[^\d\W]{1,2}\.){1,3}[,\s]*)+/sxu )
+
+#�.�.������. ������� ��� ������������� ����. ���. 2002.  �. 382.
+# rus/ipmpnt/p2006-93
+# print8("===$title///\n");
+	if( $title =~ /^(?:\s*
+		  (?:
+			(?:[Vv][oa]n\s*('t\s+)?|$dade\s*)*
+			(?:(?:\s* [[:upper:]] (?:[[:alpha:]'$dashs])+ )+,?\s )
+			(?:\s*[[:alpha:]]{1,2}\.){1,3}(and|&|,|\s)*
+		  ) |
+		  (?:
+		       (?:\s*[[:alpha:]]{1,2}\.){1,3}
+		       (?:\s*[Vv][oa]n\s*('t\s+)?|(?:[Dd][ae]|[Dd]e[nr])\s*)*
+		       (?:(?:\s*[[:upper:]] (?:[[:alpha:]'$dashs])+ )+ (\s|,|\.|&|and)*\s? )
+		  ) )+/sxu
+#               van der Lugt N.M., van Kampen A., Walther  F.J.,...
+#               Bates,  C.E.  and  H.  White  (1988)
 	# 2. Kramer B, Bosman J. Survey of
 	# 12. Kogalovsky, M., Parinov, S. The taxonomy of
-	 || $title =~ /^(([[:alpha:]]{2,}[,\s])(\s*\w{1,2}  ) [.,\s]*)+\.\s*/sxu
-	) {
+	 || $title =~ /^(([[:alpha:]]{2,}[,\s])(\s*[:alpha:]{1,2}  ) [.,\s]*)+\.\s*/sxu
+	) {                                     #  \w was here - 20181023
 		$title = $';
 		$author = $&;
 
-		$author =~ s/\b\w{1,2}\b//gu;
+		#2A $author =~ s/\b\w{1,2}\b//gu;
+#20181015:
+  $author =~ s/ \b(?:[Vv][oa]n\s*(?:'t\s+)?|$dade\s*)+(\b[[:upper:]]) /$1/gx;
+#
+		$author =~ s/\b\w  ?  \b//gux;
 		$author =~ s/[^[:alpha:]'$dashs]/ /gu;
-# print encode( "utf8", "===T,A:$title===$author===\n" );
+		$author =~ s/\s*\band\b\s*/ /gu;
+# print8( "===T,A:$title===$author===\n" ); exit;
 	}
 	undef $url;
 
 	if( $title =~ m=(\burl\W*)?(https?://[-.\w]+(/\S*)?)=iu ) {
 		($url = $2) =~ s/[.,]+$//u;     # 20170509 S.Parinov
 		$url=~s|"|&quot;|g;             # T.Krichel
-		$url = "\n    url=\"$url\"";
+		$url = " url=\"$url\"";
+		$url = "\n   $url" unless $K_flag;
+		undef $url if $url =~ /\bdoi\.org\b/i;
 # printf "===URL: $url\n===TITLE: $title\n";
 	}
 
@@ -725,7 +928,8 @@ sub prref {
 	    $title =~ /(.*?\W[[:alpha:]]{1,2}\.\s*)([^.]{30})/su ) { # 30 non-dots -- S.Parinov
 		$title = $2 . $';
 		($author = $1) =~ s/\n/ /gsu;
-		$author =~ s/\b\w{1,2}\b//gu;
+		#2A $author =~ s/\b\w{1,2}\b//gu;
+		$author =~ s/\b\w  ?  \b//gux;
 		$author =~ s/[^[:alpha:]'$dashs]/ /gu;
 # print "===T2:$title\n===A2:$author\n";
 	}
@@ -777,10 +981,12 @@ sub prref {
 		if( @handle )
 		{
 			chomp $handle[0];
-			$handle = "\n    handle=\"$handle[0]\"";
+			$handle = " handle=\"$handle[0]\"";
+			$handle = "\n   $handle" unless $K_flag;
 			if( @handle > 1 ) {
 				shift @handle;
-				$handle_sup = "\n    handle_sup=\""
+				$handle_sup = ($K_flag? " " : "\n    ")
+					. "handle_sup=\""
 					. join( " ", @handle ) . "\"";
 			}
 			$handle =~ s/&/&amp;/g;
@@ -791,35 +997,64 @@ sub prref {
       }
 
 	if( $from_meta = shift @from_meta ) {
+		$from_meta = eent( $from_meta );
 		$from_meta = "\n    <from_metadata>$from_meta</from_metadata>";
 	}
 # create a template to search citation in the text:
 	if( $author =~ /[[:alpha:]]/ ) {
+# print8( "===A:$author|\n" );
 		my @author = split /\s+/, $author;
-		my $y = $year? ",\\s*$year[0]" : "";
-		$n_match = "(:?" . join( ",\\s*", @author ) . $y;
+###                my $y = $year? ",?\\s*\\(?(?:\\s*\\d{4},)*\\s*$year[0]\\)?" : "";
+#                my $y = $year? ",?\\s*\\(?(?:\\s*\\d{4}[[:alpha:]]?,)*\\s*$year[0]\\)?" : "";
+
+		my $y = $year? ",?\\s*\\(?(?:\\s*\\d{4}[[:alpha:],]*)*?\\s*$year[0]\\)?" : "";
+# print8( "===Y:$y|\n" );
+
+		$n_match = "(?:" . join( ",\\s*", @author ) . $y;
 		if( @author > 2 ) {
 		      $n_match .= "|$author[0]\\s+$etal$y";
+		} elsif( @author == 2 ) {
+			$n_match =~ s/,/$and_or_comma/;
 		}
 		$n_match .= ")";
+#  print8( "===$n_match\n" );
 	} else {
-		$n_match = "(:?^no-match--this-is-a-place-holder\$)";
+		$n_match = "(?:^no-match--this-is-a-place-holder\$)";
 		$n_match = decode( "utf8", $n_match, Encode::FB_CROAK );
 	}
 	push @n_match, $n_match;
 	$n_match{ $n_match } = $num;
-# print "===$num,",int(@n_match),":", $n_match[$#n_match], ";\n";
-	print encode('UTF-8', <<EE, Encode::FB_DEFAULT); # FB_CROAK;
+# print8( "===$num,".int(@n_match).":".$n_match[$#n_match].";\n" );
+#20181023:
+	$author = eent( $author );
+	$title  = eent( $title  );
+	$from_pdf =~ s/ *-\n//gs;
+	$from_pdf =~ s/\n/ /gs;
+	$from_pdf = eent( $from_pdf );
+	if( length $from_pdf > $RLEN ) {  # 20181023 2-nd Parinov's rule: <= $RLEN chars
+#20181025 back                $retval = 1;
+		$from_pdf = substr( $from_pdf, 0, $RLEN );
+	}
+#/
+	if( $K_flag ) {
+		print encode('UTF-8', <<EE, Encode::FB_DEFAULT); # FB_CROAK
+<reference num="$num" start="$posmap[$start]" end="$posmap[$end]"$url author="$author" title="$title" year="$year"$handle$handle_sup$doi>
+    <from_pdf>$from_pdf</from_pdf>
+</reference>
+EE
+	} else {
+		print encode('UTF-8', <<EE, Encode::FB_DEFAULT); # FB_CROAK);
 <reference
     num="$num"
     start="$posmap[$start]"
     end="$posmap[$end]"$url
     author="$author"
     title="$title"
-    year="$year"$handle$handle_sup>
+    year="$year"$handle$handle_sup$doi>
     <from_pdf>$from_pdf</from_pdf>$from_meta
 </reference>
 EE
+	}
 	$snoska[$num] = 1;
 	return 0;
 }
@@ -837,7 +1072,7 @@ sub j2str {     # arg == j-file
 
 	my $offset = 0;
 	for( split /"page":/, $src ) {  # extra loop just for efficiency
-	  next unless /^(\d+),/;
+	  next unless /^(\d+),/;        # skip stuff before first '"page":' tag
 	  $_ = '"page":'.$_;
 	  while( /^\s*( [\[{:,}\]]      # main loop
 		     | ".*?"
@@ -846,17 +1081,21 @@ sub j2str {     # arg == j-file
 		$_ = $';
 		$lxm = $&;
 		next if $brace{$lxm};
-# print "---:$&;\n";
+# print "---Lexeme:$lxm;\n";
 		if( $lxm eq '"page"' && s/:\s*(\d+),// ) {
 			$cpage = $1;
-# print "===P:$cpage\n";
+# print "===CurrentPage:$cpage\n";
 			next;
 		}
 		if( $lxm eq '"transform"' ) {
-			s/[^\]]*\]//s;
+# Ex: "transform":[17.0939,0,0,17.0939,63.3063,745.1663],
+			s/[^\]]*\]//s;  # why not s/.*?\]//  ??
 			(my $tf = $&) =~ s/[^-,.\d]//g;
-# { print8( "___I:".int(@item).":".join("//",@item)."//TF:$tf\n" ); }
+# print8( "___Item:".int(@item).":".join("//",@item)."//TF:$tf\n" );
+# @item already holds $offset and value of 'str' which goes before 'transform'.
 			push @item, map{int($_)} split( /,/, $tf ); # [2-7]
+# item[7] == vertical coordinate of the 'str', from downside up,
+# item[6] == horizont coordinate of the 'str', left to right.
 			if( $item[7] != $previ7 ) {
 				if( ($str = $item[1]) =~ /^\s*\d+\s*$/ ) { # a single number on a new line
 					$str = "pReSuMaBlY,pAgEnUmBeR";
@@ -887,7 +1126,7 @@ sub j2str {     # arg == j-file
 			next;
 		}
 
-		if( $waitval ) {        # value of "str", content.
+		if( $waitval ) {        # ... value of "str", the content.
 AGAIN:;
 			if( $lxm =~ /\\/ ) {
 # print "===$offset:$lxm>>\n";
@@ -914,21 +1153,24 @@ AGAIN:;
 			push( @item, $offset, $lxm );   # [0,1]
 # print8( "===J2S:$offset:$vlen:$lxm;\n" );
 			$waitval = 0;
-			$lxm = '"'.$lxm.'"';
+			$lxm = '"'.$lxm.'"';    # ???
 		}
 	  }
 	}
 
-# determine V-coord of colontitles ('running headlines'?):
+# mine the data to determine V-coord of colontitles ('running headlines'?):
 	$colont_crit = 3 if( $colont_crit = int($cpage)/2 ) < 3;
-	for ( keys %if_colontit ) {
-		if( $if_colontit{$_} > 1 ) {
-			$is_colont_vc{ my $t = (split /$US/)[2] } += $if_colontit{$_}; # str+Hcoord+Vcoord
+# -- critical frequency for the V-coord to be a place for colontitles
+	for ( keys %if_colontit ) {     # STR+H+V
+		if( $if_colontit{$_} > 1 ) { # same STR at same H and same V
+			$is_colont_vc{ my $t = (split /$US/)[2] } += $if_colontit{$_}; # str+H+V
 # print "===CTV:$_->$if_colontit{$_}:$t:$is_colont_vc{ $t}\n";
 		}
 	}
 }
 
-sub print8 { print encode('UTF-8', $_[0] ); }
-
+sub print8 {
+#        return;
+	print encode('UTF-8', $_[0] );
+}
 

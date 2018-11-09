@@ -27,6 +27,7 @@ sub get_sheet {
 sub transform {
   my $in=shift;
   my $name=shift;
+  my $params=shift;
   if(not ref($in)) {
     my $file=$in;
     if(not -f $file) {
@@ -51,7 +52,7 @@ sub transform {
     if(not $x->{$name}) {
       $x->{$name}=&get_sheet($name);
     }
-    $result=$x->{$name}->transform($in);
+    $result=$x->{$name}->transform($in,%$params);
   }
   elsif(ref($name) eq 'XML::LibXSLT::StylesheetWrapper') {
     $result=$name->transform($in);

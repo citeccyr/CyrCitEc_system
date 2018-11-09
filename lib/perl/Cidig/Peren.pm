@@ -164,7 +164,8 @@ sub apply {
       warn $@;
     }
     if(not -z $err) {
-      my $err_text=&File::Slurper::read_text($err);
+      my $err_text;
+      eval { $err_text=&File::Slurper::read_text($err)};
       warn "\n\nrecitex ended with an error\n '$err_text'.";
     }
     if($p->{'verbose'}) {
@@ -376,19 +377,28 @@ sub test_dodir {
 sub prep_file_list {
   my $p=shift;
   my $type=shift // confess "I need a type here.";
+  my $update=shift // 1;
   my $tmp_file="/tmp/$type.list";
-   if(-f $tmp_file and (-M $tmp_file < 1)) {
+  if(-f $tmp_file and (-M $tmp_file < $update)) {
     return $tmp_file;
   }
   ## from the config
   my $dirs=$Cec::Paths::dirs;
-  my $peren_dir=$dirs->{'peren'} // confess "I don't see your peren dirictory.";
+  my $peren_dir=$dirs->{'peren'} // confess "I don't see your peren directory.";
   ## directories already found
   $dirs={};
   #print "new";
   open(T,"> $tmp_file");
+  my $to_search;
+  if($type=~m|^/|) {
+    $to_search=$type;
+    $to_search=~s|^/||;
+  }
+  else {
+    $to_search="*.$type";
+  }
   ## note the dot in the search glob here
-  my $to_find="find $peren_dir -type f -name '*.$type'";
+  my $to_find="find $peren_dir -type f -name '$to_search'";
   foreach my $file (`$to_find`) {
     my $dir=dirname($file);
     if($dirs->{$dir}) {

@@ -1,0 +1,589 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use Carp qw(confess);
+use Data::Dumper;
+use File::Basename;
+use File::Slurper;
+use File::Path;
+use Getopt::Std;
+use List::Util qw(shuffle);
+
+use Cec::Dates;
+use Cec::Common;
+use Cec::Past;
+use Cec::Paths;
+use Cec::Xml;
+use Cec::Xslt;
+
+#use Cidig::Peren::Warcs;
+use Cidig::Ris;
+use Cec::Warcs;
+use Lafka::Json;
+use Warc::File;
+
+## -c calculate
+## -s show
+## -n no save of calculations
+## -i calculate increment
+## -o /type/ only do calculation type
+## -v verbose
+## -n no save
+## -x fraction, skip renewal if -M small than fraction of day
+## -l limit to handle (not fully implemented)
+
+our ($opt_c,$opt_s,$opt_o,$opt_i,$opt_n,$opt_v,$opt_l);
+&getopts('csio:vn:l:');
+
+my $dirs=$Cec::Paths::dirs;
+my $files=$Cec::Paths::files;
+my $warc_dir=$dirs->{'warc'};
+my $input_dir=$dirs->{'input'};
+my $peren_dir=$dirs->{'peren'};
+my $series_stats_dir=$dirs->{'series_stats'};
+my $missing_dir=$dirs->{'series_stats'}.'/missing';
+
+## set outfile for calculations
+my $out_file=$files->{'table_results'};
+## store history
+my $today=&Cec::Dates::today;
+if(not &Cec::Common::isatty()) {
+  $out_file=$dirs->{'stats'}."/$today.json";
+}
+
+my $pretty_today=&Cec::Dates::pretty_today;
+
+my $records_file="$series_stats_dir/records.json";
+my $futli_file="$series_stats_dir/futli.json";
+my $warcs_file="$series_stats_dir/warcs.json";
+my $pdf_warcs_file="$series_stats_dir/pdf_warcs.json";
+my $json_file="$series_stats_dir/json.json";
+
+## all fields
+#3# my @fields=('records','has_futli','warcs','warcs','json','recitex','refs_found','intc','refc');
+my @fields=('records','has_futli','warcs','json','recitex','refs_found','intc','refc');
+
+## global, but only loaded for calculate
+my $handle_stylesheet;
+
+binmode(STDOUT,'utf8');
+## the results table
+my $t;
+
+
+## functions to calculate the results
+my $f;
+
+$f->{'records'} = sub {
+  my @founds=`find $input_dir -type f -name '*.xml'`;
+  my $h;
+  foreach my $found (shuffle @founds) {
+    chomp $found;
+    my $source;
+    eval {
+      $source = XML::LibXML->load_xml(location => $found);
+    };
+    if(not $source) {
+      print "I can't parse $found\n";
+      next;
+    }
+    my $handle = $handle_stylesheet->transform($source)->textContent;
+    $handle=lc($handle);
+    $h->{$handle}=1;
+    my $series=&series($handle) // next;
+    $t->{$series}->{'records'}++;
+  }
+  &Lafka::Json::save($h,"$records_file");
+};
+
+$f->{'has_futli'} = sub {
+  my $in=&Lafka::Json::load($files->{'futlis'});
+  my $h;
+  foreach my $found (keys %$in) {
+    $h->{$found}=1;
+    my $series=&series($found);
+    $t->{$series}->{'has_futli'}++;
+  }
+  &Lafka::Json::save($h,"$futli_file");
+};
+
+$f->{'warcs'} = sub {
+   my @founds=`find $warc_dir -type f -name '*.warc'`;
+   my $h;
+   my $p;
+   foreach my $found (sort @founds) {
+     chomp $found;
+     if($opt_l and not $found=~m|$opt_l|i) {
+       #print "I skip $found.\n";
+       next;
+     }
+     my $handle=lc(&{$Cec::Warcs::handle_from_warc}($found));
+     if(not $handle) {
+       warn "I got no handle from $found";
+       next;
+     }
+     if($h->{$handle}) {
+       my $old=$h->{$handle};
+       print "I repeat handle $handle, run ls -lt $found $old\n";
+       print "I remove $old\n";
+       unlink $old;
+       next;
+     }
+     $h->{$handle}=$found;
+     my $series=&series(lc($handle));
+     if(not $series) {
+       warn "I got no series from $handle.";
+       next;
+     }
+     $t->{$series}->{'warcs'}++;
+     if(not -f $found) {
+       confess "I don't see $found.\n";
+     }
+     my $warc=Warc::File->new({'file'=>$found});
+     my $pdfs=$warc->get_pdfs() // [];
+     my $total_pdf=scalar @{$pdfs};
+     if($total_pdf) {
+       $t->{$series}->{'pdf_warcs'}++;
+       $p->{$handle}=1;
+     }
+   }
+   &Lafka::Json::save($h,"$warcs_file");
+   if($opt_v) {
+     print "I wrote $warcs_file\n";
+   }
+   &Lafka::Json::save($p,"$pdf_warcs_file");
+   if($opt_v) {
+     print "I wrote $pdf_warcs_file\n";
+   }
+ };
+
+$f->{'json'} = sub {
+  my @founds=`find $peren_dir -type f -name '*.json'`;
+  my $h;
+  my $i_have;
+  foreach my $found (sort  @founds) {
+    chomp $found;
+    my $dir=dirname($found);
+    $dir=~s|$peren_dir/*|| or die;
+    my $papid=&{$Cidig::Ris::file2id->{'spz'}}($dir);
+    my $handle=lc($papid);
+    $h->{$handle}=1;
+    if($i_have->{$handle}) {
+      my $old=$h->{$handle};
+      print "JSON repeats the handle $handle, run ls -lt $found $old\n";
+      #unlink $old;
+      next;
+    }
+    $i_have->{$handle}=$found;
+    $h->{$handle}=$found;
+    #my $series=&series(lc($handle));
+    my $series=&series($handle) // next;
+    $t->{$series}->{'json'}++;
+  }
+  &Lafka::Json::save($h,"$json_file");
+};
+
+## new recitex function based on stats script
+$f->{'reci'} = sub {
+  my $xpc = XML::LibXML::XPathContext->new();
+  my @founds=glob("$series_stats_dir/*.xml");
+  foreach my $found (shuffle @founds) {
+    my $series=basename($found);
+    $series=substr($series,0,length($series)-4);
+    my $source;
+    eval {
+      $source = XML::LibXML->load_xml(location => $found);
+    };
+    $t->{$series}->{'refs'}=$xpc->find('count(//*[@stats_a > 0])',$source)->value();
+    if(not $t->{$series}->{'refs'}=~m|^\d+$|) {
+      confess "in ".$t->{$series}." I see no  refs";
+    }
+    $t->{$series}->{'cref'}=$xpc->find('sum(//@stats_a)',$source)->value();
+    if(not $t->{$series}->{'cref'}=~m|^\d+$|) {
+      confess "in ".$t->{$series}." I see no  cref";
+    }
+    $t->{$series}->{'ints'}=$xpc->find('count(//*[@stats_b > 0])',$source)->value();
+    if(not $t->{$series}->{'ints'}=~m|^\d+$|) {
+      confess "in ".$t->{$series}." I see no  ints";
+    }
+    $t->{$series}->{'cint'}=$xpc->find('sum(//@stats_b)',$source)->value();
+    if(not $t->{$series}->{'cint'}=~m|^\d+$|) {
+      confess "in ".$t->{$series}." I see no  cint";
+    }
+    $t->{$series}->{'cons'}=$xpc->find('count(//*[@stats_c > 0])',$source)->value();
+    if(not $t->{$series}->{'cons'}=~m|^\d+$|) {
+      confess "in ".$t->{$series}." I see no  cons";
+    }
+    $t->{$series}->{'ccon'}=$xpc->find('sum(//@stats_c)',$source)->value();
+    if(not $t->{$series}->{'ccon'}=~m|^\d+$|) {
+      confess "in ".$t->{$series}." I see no  ccon";
+    }
+    $t->{$series}->{'cits'}=$xpc->find('count(//*[@stats_d > 0])',$source)->value();
+    if(not $t->{$series}->{'cits'}=~m|^\d+$|) {
+      confess "in ".$t->{$series}." I see no  cits";
+    }
+    $t->{$series}->{'ccit'}=$xpc->find('sum(//@stats_d)',$source)->value();
+    if(not defined($t->{$series}->{'ccit'}) or
+       not $t->{$series}->{'ccit'}=~m|^\d+$|) {
+      my $text= Dumper $t->{$series};
+      confess "in $series $text $found I see no  ccit";
+    }
+    $t->{$series}->{'mits'}=$xpc->find('count(//*[@stats_e > 0])',$source)->value();
+    if(not $t->{$series}->{'mits'}=~m|^\d+$|) {
+      confess "in ".$t->{$series}." I see no  mits";
+    }
+    $t->{$series}->{'cmit'}=$xpc->find('sum(//@stats_e)',$source)->value();
+    if(not $t->{$series}->{'cmit'}=~m|^\d+$|) {
+      confess "in ".$t->{$series}." I see no  cmit";
+    }
+  }
+};
+
+## calculated series by handle
+sub series {
+  my $in=shift // confess "I need an input here.";
+  ## check if this is a series handle
+  if($in=~m|^([^:]+:[^:]+:[^:]+)$|) {
+    if($opt_v) {
+      print "I skip the apparent series handle '$in'\n";
+    }
+    return undef;
+  }
+  $in=~m|^([^:]+:[^:]+:[^:]+):|;
+  my $series=$1;
+  if(not $series) {
+    if($opt_v) {
+      print "I have no series for '$in'\n";
+    }
+    return undef;
+  }
+  else {
+    #print "series is $series\n";
+  }
+  ## fixMe: I don't know why I have to do this.
+  #$series=~s|^spz:neicon:neicon|spz:neicon:|;
+  #$series=~s|^repec:(...):\1|repec:$1:|;
+  #if(not $series) {
+  #  print "I can't form a series for '$in'.\n";
+  #  return 0;
+  #}
+  return lc($series);
+}
+
+## main function to calcalue
+sub calculate {
+  $handle_stylesheet = &Cec::Xslt::get_sheet('get_handle');
+  if($opt_i) {
+    $t=&Lafka::Json::load($out_file);
+  }
+  my @stacks=('records','has_futli','warcs','json','reci');
+  # my @stacks=('records');
+  foreach my $run (shuffle (@stacks)) {
+    if($opt_o and $run ne $opt_o) {
+      if($opt_v) {
+	print "I only do $opt_o. Therefore I skip $run.\n";
+      }
+      next;
+    }
+    if($opt_v) {
+      print "I run $run\n";
+    }
+    if($opt_i and is_complete_for_field($run)) {
+      if($opt_v) {
+	print "I'm already done for field $run.\n";
+      }
+      next;
+    }
+    if($f->{$run}) {
+      if($opt_v) {
+	print "I am doing $run ... ";
+      }
+      ## populates $t, a global variabe
+      &{$f->{$run}};
+      if($opt_v) {
+	print "done\n";
+      }
+    }
+    else {
+      if($opt_v) {
+	print "I can't run '$run'\n";
+      }
+    }
+    if(not $opt_n) {
+      if(not $opt_l) {
+	if($opt_v) {
+	  print "I save \$t\n";
+	}
+	&Lafka::Json::save($t,$out_file);
+      }
+      else {
+	my $out_file="/tmp/special.json";
+	print "I save $out_file\n";
+	&Lafka::Json::save($t,$out_file);
+      }
+    }
+  }
+}
+
+sub cover_doc {
+  ## main input
+  my $in=shift;
+  ## input about missing
+  my $miss=shift;
+  my $doc = XML::LibXML::Document->new('1.0','utf-8');
+  my $table_ele=$doc->createElement('table');
+  $table_ele->setAttribute('date',$today);
+  foreach my $series (sort keys %$in) {
+    my $series_ele=$doc->createElement('series');
+    $series_ele->setAttribute('id',$series);
+    $series_ele->appendText("\n  ");
+    foreach my $field (sort keys %{$in->{$series}}) {
+      my $field_ele=$doc->createElement($field);
+      if(not $in->{$series}->{$field}) {
+	print "I have not $field for $series\n";
+	$field_ele->appendText(0);
+      }
+      else {
+	$field_ele->appendText($in->{$series}->{$field});
+      }
+      if($field eq 'records') {
+	## the ammount missing is in the value, but here we trick by
+	## saying all are missing to get the full set of records that
+	## sip asked for.
+	$field_ele->setAttribute('missing','_');
+      }
+      $series_ele->appendChild($field_ele);
+      $series_ele->appendText("\n  ");
+      ## say that there are some missing values
+      if($miss->{$field}->{$series}) {
+	$field_ele->setAttribute('missing',$field);
+      }
+      else {
+	#print "$field not missing\n";
+      }
+    }
+    $table_ele->appendChild($series_ele);
+    $table_ele->appendText("\n ");
+  }
+  $doc->setDocumentElement($table_ele);
+  return $doc;
+}
+
+## returns parts of big that are not in small, with potential
+## delete of these in small that are not in big
+sub subtract {
+  my $big=shift;
+  my $small=shift;
+  my $do_delete=shift // '';
+  my $s={};
+  ## make sure all the small ones are in the big one
+  if($do_delete) {
+    foreach my $h (keys %$small) {
+      if($big->{$h}) {
+	next;
+      }
+      delete $small->{$h};
+    }
+  }
+  foreach my $h (keys %$big) {
+    $h=lc($h);
+    if($small->{$h}) {
+      next;
+    }
+    $s->{$h}=1;
+  }
+  return $s;
+}
+
+sub series_out {
+  my $in=shift;
+  my $out=shift;
+  foreach my $h (keys %$in) {
+    my $series=&series($h);
+    if(not $series) {
+      #print "I have no series for $h\n";
+      next;
+    }
+    $out->{$series}->{$h}=1;
+  }
+  return $out;
+}
+
+sub missing {
+  ## indicator of what is missing so we can place this in the cover
+  my $miss;
+  my $records=&Lafka::Json::load($records_file);
+  my $futli=&Lafka::Json::load($futli_file);
+  my $warcs=&Lafka::Json::load($warcs_file);
+  my $pdf_warcs=&Lafka::Json::load($pdf_warcs_file);
+  my $json=&Lafka::Json::load($json_file);
+  my $all=&series_out($records);
+  my $r_f=&series_out(&subtract($records,$futli,'do_delete'));
+  my $f_w=&series_out(&subtract($futli,$warcs,'do_delete'));
+  my $w_p=&series_out(&subtract($warcs,$pdf_warcs,'do_delete'));
+  my $p_f=&series_out(&subtract($pdf_warcs,$json,'do_delete'));
+  $miss->{'has_futli'}=&to_docs($r_f,'has_futli');
+  $miss->{'warcs'}=&to_docs($f_w,'warcs');
+  $miss->{'pdf_warcs'}=&to_docs($w_p,'pdf_warcs');
+  $miss->{'json'}=&to_docs($p_f,'json');
+  ## missing from nothing
+  $miss->{'_'}=&to_docs($all,'_');
+  return $miss;
+}
+
+sub to_docs {
+  my $in=shift;
+  my $name=shift;
+  my $out;
+  my $d;
+  my $s;
+  my $out_dir="$missing_dir/$name";
+  if(not -d $out_dir) {
+    mkpath $out_dir;
+  }
+  foreach my $series (keys %$in) {
+    if(not $d->{$series}) {
+      $d->{$series}=XML::LibXML::Document->new('1.0','utf-8');
+    }
+    if(not $s->{$series}) {
+      $s->{$series}=$d->{$series}->createElement('series');
+      $s->{$series}->setAttribute('handle',$series);
+    }
+    foreach my $handle (sort keys %{$in->{$series}}) {
+      my $ele=$d->{$series}->createElement('papers');
+      $ele->setAttribute('handle',$handle);
+      $s->{$series}->appendText("\n");
+      $s->{$series}->appendChild($ele);
+    }
+    $d->{$series}->setDocumentElement($s->{$series});
+    my $out_file="$out_dir/$series.xml";
+    $d->{$series}->toFile($out_file);
+    $out->{$series}=1;
+  }
+  ## return a hash that goes to the data about missing series
+  return $out;
+}
+
+sub build_missing {
+  foreach my $file (`find $missing_dir -type f -name '*.xml'`) {
+    chomp($file);
+    &html_missing_file($file);
+  }
+}
+
+sub html_missing_file {
+  my $file=shift;
+  my $base=substr($file,length($missing_dir));
+  $base=~m|^/*([^/]+)/|;
+  my $page_type=$1;
+  my $out_file='/missing'.$base;
+  my $source;
+  eval {
+    $source = XML::LibXML->load_xml(location => $file);
+  };
+  if(not $source) {
+    print "I can't parse $file\n";
+    return;
+  }
+  $out_file =substr($out_file,0,length($out_file)-4);
+  $out_file.='.html';
+  $out_file = $dirs->{'stats_web'}.$out_file;
+  my %params;
+  my $prevpath=&Cec::Past::get_prevpath($out_file);
+  my $params;
+  if($prevpath) {
+    $params->{'prevpath'}="'$prevpath'";
+  }
+  $params->{'date_pretty'}="'$pretty_today'";
+  $params->{'page_type'}="'$page_type'";
+  my $out=&Cec::Xslt::transform($source,'stats_missing',$params);
+  &Cec::Xml::install_doc($out,$out_file);
+}
+
+sub show {
+  my $in=&Lafka::Json::load($out_file);
+  my $miss=&missing();
+  &build_missing();
+  my $doc=&cover_doc($in,$miss);
+  $doc->toFile('/tmp/cover.xml');
+  my $prevpath=&Cec::Past::get_prevpath($out_file);
+  my $params;
+  if($prevpath) {
+    $params->{'prevpath'}="'$prevpath'";
+  }
+  $params->{'date_pretty'}="'$pretty_today'";
+  my $out=&Cec::Xslt::transform($doc,'stats_cover',$params);
+  #    A,'date_pretty' => "'$pretty_today'");
+  if($opt_v) {
+    print $out;
+  }
+  &Cec::Xml::install_doc($out,$files->{'stats_output'});
+}
+
+# sub show_text_old {
+#   my $in=shift;
+#   my $series_width=36;
+#   my $sum={};
+#   printf('%'.$series_width.'s','');
+#   foreach my $field (@fields) {
+#     my $field_width=length($field)+2;
+#     my $field_format='%'.$field_width.'s';
+#     printf($field_format, $field);
+#     $sum->{$field}=0;
+#   }
+#   print "\n";
+#   foreach my $series (keys %$in) {
+#     if(not $series) {
+#       next;
+#     }
+#     printf('%-'.$series_width.'s', $series);
+#     foreach my $field (@fields) {
+#       my $field_width=length($field)+2;
+#       my $field_format='%'.$field_width.'s';
+#       my $value=$in->{$series}->{$field} // 0;
+#       $sum->{$field}=$sum->{$field}+$value;
+#       printf($field_format, $value);
+#     }
+#     print "\n";
+#   }
+#   ## sums
+#   printf('%-'.$series_width.'s',"\x{03a3}");
+#   foreach my $field (@fields) {
+#     my $field_width=length($field)+2;
+#     my $field_format='%'.$field_width.'s';
+#     printf($field_format,$sum->{$field});
+#   }
+#   print "\n";
+# }
+
+###
+sub is_complete_for_field {
+  my $field=shift;
+  my $count_series=0;
+  my $count_defined=0;
+  foreach my $series (keys %{$t}) {
+    $count_series++;
+    if(defined($t->{$series}->{$field})) {
+      $count_defined++;
+    }
+  }
+  ## say it's complete if more than 50% done
+  if($count_defined / $count_series > .25) {
+    return 1;
+  }
+  return 0;
+}
+###
+
+if($opt_c) {
+  &calculate();
+}
+elsif($opt_s) {
+  &show();
+}
+else {
+  &calculate();
+  &show();
+}

@@ -5,10 +5,31 @@ use warnings;
 
 use Cidig::Peren;
 
+
 my $p=Cidig::Peren->new({'input'=>'warc',
 			 'json_only'=>1,
-			 'verbose'=>'1'});
-#$p->deal_with_warcs({'only_file'=>'rnp/ppaper/nvg155.warc'});
+			 ## temporary before deduping warcs
+			 ##'max_pdfs'=>1,
+			 'verbose'=>'10'});
+#$p->deal_with_warcs({'only_file'=>'/home/cec/lafka/warc/spz/neicon/doklady/y%3A2014%3Ai%3A6%3Ap%3A47-52.warc',});
 $p->deal_with_warcs();
 
+#
 #$p->parscit_texts();
+# /home/cec/opt/peren/
+
+# /home/cec/opt/peren/spz/neicon/doklady/y%3A2014%3Ai%3A6%3Ap%3A47-52/4.pdf-stream.json.log
+# /home/cec/opt/peren/spz/neicon/doklady/y%3A2014%3Ai%3A6%3Ap%3A47-52/4.pdf-stream.json
+# /home/cec/opt/peren/spz/neicon/doklady/y%3A2014%3Ai%3A6%3Ap%3A47-52/4.pdf-stream.json.err
+# /home/cec/opt/peren/spz/neicon/russjcardiol/y%3A2007%3Ai%3A3%3Ap%3A81-85/4.pdf-stream.json.log
+# /home/cec/opt/peren/spz/neicon/russjcardiol/y%3A2007%3Ai%3A3%3Ap%3A81-85/4.pdf-stream.json
+# /home/cec/opt/peren/spz/neicon/russjcardiol/y%3A2007%3Ai%3A3%3Ap%3A81-85/4.pdf-stream.json.err
+# /home/cec/opt/peren/spz/neicon/russjcardiol/y%3A2017%3Ai%3A6%3Ap%3A108-112/4.pdf-stream.json.log
+# /home/cec/opt/peren/spz/neicon/russjcardiol/y%3A2017%3Ai%3A6%3Ap%3A108-112/4.pdf-stream.json
+# /home/cec/opt/peren/spz/neicon/russjcardiol/y%3A2017%3Ai%3A6%3Ap%3A108-112/4.pdf-stream.json.err
+# /home/cec/opt/peren/spz/neicon/vestnik-bio-msu/y%3A2011%3Ai%3A1%3Ap%3A58-62/4.pdf-stream.json.log
+# /home/cec/opt/peren/spz/neicon/vestnik-bio-msu/y%3A2011%3Ai%3A1%3Ap%3A58-62/4.pdf-stream.json
+# /home/cec/opt/peren/spz/neicon/vestnik-bio-msu/y%3A2011%3Ai%3A1%3Ap%3A58-62/4.pdf-stream.json.err
+# /home/cec/opt/peren/spz/neicon/cardiovascular/y%3A2013%3Ai%3A2%3Ap%3A58-62/4.pdf-stream.json.log
+# /home/cec/opt/peren/spz/neicon/cardiovascular/y%3A2013%3Ai%3A2%3Ap%3A58-62/4.pdf-stream.json
+# /home/cec/opt/peren/spz/neicon/cardiovascular/y%3A2013%3Ai%3A2%3Ap%3A58-62/4.pdf-stream.json.er

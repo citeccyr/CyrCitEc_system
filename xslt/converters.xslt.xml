@@ -1,0 +1,166 @@
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns="http://www.w3.org/1999/xhtml"
+                exclude-result-prefixes="#default">
+  <xsl:include href="numbers.xslt.xml"/>
+  <xsl:variable name="doi_linker"
+		select="'http://dx.doi.org/'"/>
+  <xsl:variable name="linker"
+		select="'https://socionet.ru/publication.xml?h='"/>
+  <xsl:variable name="collection_linker"
+		select="'https://socionet.ru/collection.xml?h='"/>
+  <xsl:variable name="pdf_linker"
+		select="'https://socionet.ru/pdfviewer.xml?h='"/>
+  <xsl:variable name="self"
+		select="'http://cirtec.ranepa.ru'"/>
+  <xsl:variable name="dis_url">
+    <xsl:value-of select="$self"/>
+    <xsl:text>/analysis/spadist/cgi/spadist4bundle.cgi?code=</xsl:text>
+  </xsl:variable>
+  <xsl:variable name="phrases_url">
+    <xsl:value-of select="$self"/>
+    <xsl:text>/analysis/spadist/cgi/phrases.cgi</xsl:text>
+  </xsl:variable>
+  <xsl:variable name="project"
+		select="'Cirtec'"/>
+  <xsl:variable name="checker">
+    <xsl:text>(</xsl:text>
+    <em>
+      <xsl:text>check this in PDF content</xsl:text>
+    </em>
+    <xsl:text>)</xsl:text>
+  </xsl:variable>
+  <xsl:template name="repec">
+    <xsl:param name="in"/>
+    <xsl:variable name="start"
+		  select="substring-before($in,':')"/>
+    <xsl:choose>
+      <xsl:when test="not($start='repec')">
+	<xsl:value-of select="$in"/>
+      </xsl:when>
+      <xsl:otherwise>
+	<xsl:variable name="end"
+		      select="substring-after($in,':')"/>
+	<xsl:text>RePEc:</xsl:text>
+	<xsl:value-of select="$end"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+  <xsl:template name="hyperlink">
+    <!-- Input -->
+    <xsl:param name="string"/>
+    <xsl:variable name="proto">
+      <xsl:choose>
+	<xsl:when test="contains($string, 'http://')">
+          <xsl:text>http://</xsl:text>
+        </xsl:when>
+        <xsl:when test="contains($string, 'https://')">
+          <xsl:text>https://</xsl:text>
+        </xsl:when>
+      </xsl:choose>
+    </xsl:variable>
+    <!-- Vars -->
+    <xsl:variable name="before" select="substring-before($string, $proto)" />
+    <xsl:variable name="after" select="substring-after($string, $proto)" />
+    <xsl:variable name="url" select="concat($proto, substring-before($after, ' '))"/>
+    <xsl:variable name="rest" select="substring-after($string, $url)" />
+    <!-- Output -->
+    <xsl:choose>
+      <xsl:when test="not($before)">
+	<xsl:value-of select="$string"/>
+      </xsl:when>
+      <xsl:otherwise>
+	<xsl:value-of select="$before"/>
+	<a>
+	  <xsl:attribute name="href">
+	    <xsl:value-of select="$url"/>
+	  </xsl:attribute>
+	  <xsl:value-of select="$url"/>
+	</a>
+	<xsl:text>&#32;</xsl:text>
+	<xsl:value-of select="$rest"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+  <xsl:template name="handle_to_path">
+    <xsl:param name="in"/>
+    <xsl:variable name="cut_0"
+		  select="$in"/>
+    <xsl:variable name="cut_1"
+		  select="substring-after($cut_0,':')"/>
+    <xsl:variable name="cut_2"
+		  select="substring-after($cut_1,':')"/>
+    <xsl:variable name="cut_3"
+		  select="substring-after($cut_2,':')"/>
+    <xsl:variable name="cut_4"
+		  select="substring-after($cut_3,':')"/>
+    <xsl:variable name="part_1"
+		  select="substring-before($cut_0,':')"/>
+    <xsl:variable name="part_2"
+		  select="substring-before($cut_1,':')"/>
+    <xsl:variable name="part_3"
+		  select="substring-before($cut_2,':')"/>
+    <xsl:variable name="part_4"
+		  select="substring-before($cut_3,':')"/>
+    <xsl:choose>
+      <xsl:when test="$part_1='repec'">
+	<xsl:text>RePEc</xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+	<xsl:value-of select="$part_1"/>
+      </xsl:otherwise>
+    </xsl:choose>
+    <xsl:text>/</xsl:text>
+    <xsl:value-of select="$part_2"/>
+    <xsl:text>/</xsl:text>
+    <xsl:value-of select="$part_3"/>
+  </xsl:template>
+  <xsl:template name="handle_to_series">
+    <xsl:param name="in"/>
+    <xsl:variable name="cut_0"
+		  select="$in"/>
+    <xsl:variable name="cut_1"
+		  select="substring-after($cut_0,':')"/>
+    <xsl:variable name="cut_2"
+		  select="substring-after($cut_1,':')"/>
+    <xsl:variable name="cut_3"
+		  select="substring-after($cut_2,':')"/>
+    <xsl:variable name="cut_4"
+		  select="substring-after($cut_3,':')"/>
+    <xsl:variable name="part_1"
+		  select="substring-before($cut_0,':')"/>
+    <xsl:variable name="part_2"
+		  select="substring-before($cut_1,':')"/>
+    <xsl:variable name="part_3"
+		  select="substring-before($cut_2,':')"/>
+    <xsl:variable name="part_4"
+		  select="substring-before($cut_3,':')"/>
+    <xsl:choose>
+      <xsl:when test="$part_1='repec'">
+	<xsl:text>RePEc</xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+	<xsl:value-of select="$part_1"/>
+      </xsl:otherwise>
+    </xsl:choose>
+    <xsl:text>:</xsl:text>
+    <xsl:value-of select="$part_2"/>
+    <xsl:text>:</xsl:text>
+    <xsl:value-of select="$part_3"/>
+    <xsl:text></xsl:text>
+  </xsl:template>
+  <xsl:template name="handle_to_end">
+    <xsl:param name="in"/>
+    <xsl:variable name="cut_0"
+		  select="$in"/>
+    <xsl:variable name="cut_1"
+		  select="substring-after($cut_0,':')"/>
+    <xsl:variable name="cut_2"
+		  select="substring-after($cut_1,':')"/>
+    <xsl:variable name="cut_3"
+		  select="substring-after($cut_2,':')"/>
+    <xsl:variable name="cut_4"
+		  select="substring-after($cut_3,':')"/>
+    <xsl:value-of select="$cut_3"/>
+  </xsl:template>
+</xsl:stylesheet>

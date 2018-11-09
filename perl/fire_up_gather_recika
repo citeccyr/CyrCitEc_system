@@ -1,0 +1,35 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use Carp qw(confess);
+use Cec::Paths;
+use Cidig::Peren;
+use Cec::Processes;
+
+my $total_fire_up=$ARGV[0] // 6;
+my $dirs=$Cec::Paths::dirs;
+my $files=$Cec::Paths::files;
+my $script=$files->{'apply_recika_script'};
+
+my $interval=60;
+
+my $count_running=&Cec::Processes::count_running($script);
+while($count_running < $total_fire_up) {
+  my $s="nohup $script > /tmp/gr$count_running.log  2> /tmp/gr$count_running.err &";
+  print "I run '$s'\n";
+  system($s);
+  $count_running=&Cec::Processes::count_running($script);
+}
+
+while(1) {
+  $count_running=&Cec::Processes::count_running($script);
+  if(not $count_running) {
+    exit;
+  }
+  print "I have $count_running scripts.\n";
+  print "I sleep $interval seconds ...";
+  sleep $interval;
+  print " woke up.\n";
+}

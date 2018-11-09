@@ -1,0 +1,270 @@
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns="http://www.w3.org/1999/xhtml"
+                exclude-result-prefixes="#default">
+  <xsl:include href="converters.xslt.xml"/>
+  <xsl:include href="footer.xslt.xml"/>
+  <xsl:include href="page.xslt.xml"/>
+  <xsl:include href="stats_css.xslt.xml"/>
+  <xsl:include href="sums_row_table.xslt.xml"/>
+  <xsl:param name="prevpath"/>
+  <xsl:variable name="title">
+    <xsl:value-of select="$project"/>
+    <xsl:text>&#32;results for series&#32;</xsl:text>
+    <a>
+      <xsl:attribute name="href">
+	<xsl:value-of select="$collection_linker"/>
+	<xsl:value-of select="$series_handle"/>
+      </xsl:attribute>
+      <xsl:value-of select="$series_handle_repec"/>
+    </a>
+  </xsl:variable>
+  <xsl:variable name="date"
+		select="/table/@date"/>
+  <xsl:variable name="series_handle">
+    <xsl:call-template name="handle_to_series">
+      <xsl:with-param name="in">
+	<xsl:value-of select="/series/doc[1]/@handle"/>
+      </xsl:with-param>
+    </xsl:call-template>
+  </xsl:variable>
+  <xsl:variable name="series_handle_repec">
+    <xsl:call-template name="repec">
+      <xsl:with-param name="in"
+		      select="$series_handle"/>
+    </xsl:call-template>
+  </xsl:variable>
+  <xsl:variable name="a_name"
+		select="'references'"/>
+  <xsl:variable name="b_name"
+		select="'reference contexts'"/>
+  <xsl:variable name="c_name"
+		select="'contexts by reference'"/>
+  <xsl:variable name="d_name"
+		select="'linked references'"/>
+  <xsl:variable name="e_name"
+		select="'references without contexts'"/>
+  <xsl:template name="results">
+    <h1>
+      <xsl:copy-of select="$title"/>
+    </h1>
+    <xsl:text>&#10;</xsl:text>
+    <table>
+      <!-- ## header row -->
+      <tr>
+	<td>&#32;</td>
+	<td>&#32;</td>
+	<th style="text-align: center" align="center">[a]</th>
+	<xsl:text>&#10;</xsl:text>
+	<th style="text-align: center" align="center">[b]</th>
+	<xsl:text>&#10;</xsl:text>
+	<th style="text-align: center" align="center">[c]</th>
+	<xsl:text>&#10;</xsl:text>
+	<th style="text-align: center" align="center">[d]</th>
+	<xsl:text>&#10;</xsl:text>
+	<th style="text-align: center" align="center">[e]</th>
+	<xsl:text>&#10;</xsl:text>
+      </tr>
+      <tr>
+	<td>&#32;</td>
+	<th>
+	  <xsl:text>paper handle</xsl:text>
+	</th>
+	<xsl:text>&#10;</xsl:text>
+	<!-- 1 -->
+	<th class="right_border">
+	  <xsl:value-of select="$a_name"/>
+	</th>
+	<xsl:text>&#10;</xsl:text>
+	<!-- 2 -->
+	<th class="right_border">
+	  <xsl:value-of select="$b_name"/>
+	</th>
+	<xsl:text>&#10;</xsl:text>
+	<!-- 3 -->
+	<th class="right_border">
+	  <xsl:value-of select="$c_name"/>
+	</th>
+	<xsl:text>&#10;</xsl:text>
+	<!-- 4 -->
+	<th class="right_border">
+	  <xsl:value-of select="$d_name"/>
+	</th>
+	<xsl:text>&#10;</xsl:text>
+	<!-- 5 -->
+	<th class="right_border">
+	  <xsl:value-of select="$e_name"/>
+	</th>
+	<xsl:text>&#10;</xsl:text>
+	<!-- 6 -->
+      </tr>
+      <xsl:for-each select="/series/doc">
+	<xsl:variable name="path">
+	  <xsl:call-template name="handle_to_path">
+	    <xsl:with-param name="in">
+	      <xsl:value-of select="./@handle"/>
+	    </xsl:with-param>
+	  </xsl:call-template>
+	</xsl:variable>
+	<xsl:text>&#10;</xsl:text>
+	<tr>
+	  <td>
+	    <xsl:text>&#32;</xsl:text>
+	  </td>
+	  <xsl:text>&#10;</xsl:text>
+	  <th class="handle">
+	    <a>
+	      <xsl:attribute name="href">
+		<xsl:value-of select="$linker"/>
+		<xsl:value-of select="@handle"/>
+	      </xsl:attribute>
+	      <xsl:call-template name="repec">
+		<xsl:with-param name="in">
+		  <xsl:value-of select="./@handle"/>
+		</xsl:with-param>
+	      </xsl:call-template>
+	    </a>
+	  </th>
+	  <xsl:text>&#10;</xsl:text>
+	  <xsl:for-each select="./@*">
+	    <xsl:variable name="name"
+			  select="name()"/>
+	    <xsl:choose>
+	      <xsl:when test="substring-before($name,'_')='stats'">
+		<td  class="right_border">
+		  <xsl:attribute name="title">
+		    <xsl:choose>
+		      <xsl:when test="$name='stats_a'">
+			<xsl:value-of select="$a_name"/>
+		      </xsl:when>
+		      <xsl:when test="$name='stats_b'">
+			<xsl:value-of select="$b_name"/>
+		      </xsl:when>
+		      <xsl:when test="$name='stats_c'">
+			<xsl:value-of select="$c_name"/>
+		      </xsl:when>
+		      <xsl:when test="$name='stats_d'">
+			<xsl:value-of select="$d_name"/>
+		      </xsl:when>
+		      <xsl:when test="$name='stats_e'">
+			<xsl:value-of select="$e_name"/>
+		      </xsl:when>
+		      <xsl:otherwise>
+			<xsl:comment>
+			  <xsl:text>ERROR</xsl:text>
+			</xsl:comment>
+		      </xsl:otherwise>
+		    </xsl:choose>
+		  </xsl:attribute>
+		  <xsl:if test=". &gt; 0">
+		    <a>
+		      <xsl:attribute name="href">
+			<xsl:call-template name="handle_to_path">
+			  <xsl:with-param name="in">
+			    <xsl:value-of select="../@handle"/>
+			  </xsl:with-param>
+			</xsl:call-template>
+			<xsl:text>/</xsl:text>
+			<xsl:value-of select="name()"/>
+			<xsl:text>/</xsl:text>
+			<xsl:call-template name="handle_to_end">
+			  <xsl:with-param name="in">
+			    <xsl:value-of select="../@handle"/>
+			  </xsl:with-param>
+			</xsl:call-template>
+			<xsl:text>.html</xsl:text>
+		      </xsl:attribute>
+		      <xsl:value-of select="."/>
+		    </a>
+		  </xsl:if>
+		</td>
+	      </xsl:when>
+	      <xsl:otherwise/>
+	    </xsl:choose>
+	    <xsl:text>&#10;</xsl:text>
+	  </xsl:for-each>
+	</tr>
+	<xsl:text>&#10;</xsl:text>
+      </xsl:for-each>
+      <tr>
+	<td>
+	  <xsl:text>&#x03a3;</xsl:text>
+	</td>
+	<td class="sum">
+	  <xsl:value-of select="count(//@handle)"/>
+	</td>
+	<td class="sum">
+	  <xsl:attribute name="title">
+	    <xsl:value-of select="$a_name"/>
+	  </xsl:attribute>
+	  <xsl:value-of select="sum(//@stats_a)"/>
+	</td>
+	<td class="sum">
+	  <xsl:attribute name="title">
+	    <xsl:value-of select="$b_name"/>
+	  </xsl:attribute>
+	  <xsl:value-of select="sum(//@stats_b)"/>
+	</td>
+	<td class="sum">
+	  <xsl:attribute name="title">
+	    <xsl:value-of select="$c_name"/>
+	  </xsl:attribute>
+	  <xsl:value-of select="sum(//@stats_c)"/>
+	</td>
+	<td class="sum">
+	  <xsl:attribute name="title">
+	    <xsl:value-of select="$d_name"/>
+	  </xsl:attribute>
+	  <xsl:value-of select="sum(//@stats_d)"/>
+	</td>
+	<td class="sum">
+	  <xsl:attribute name="title">
+	    <xsl:value-of select="$e_name"/>
+	  </xsl:attribute>
+	  <xsl:value-of select="sum(//@stats_e)"/>
+	</td>
+      </tr>
+    </table>
+    <xsl:call-template name="footer"/>
+  </xsl:template>
+  <xsl:variable name="js">
+    <xsl:text>window.onload&#32;=&#32;function&#32;()&#32;{&#10;</xsl:text>
+    <xsl:text>&#32;hide();&#10;</xsl:text>
+    <xsl:text>}&#10;</xsl:text>
+    <xsl:text>&#10;</xsl:text>
+    <xsl:text>function&#32;show()&#32;{&#10;</xsl:text>
+    <xsl:text>&#32;var&#32;table=document.getElementById("explain");&#10;</xsl:text>
+    <xsl:text>&#32;table.style.display='block';&#10;</xsl:text>
+    <xsl:text>&#32;var&#32;show=document.getElementById("show");&#10;</xsl:text>
+    <xsl:text>&#32;show.style.display='none';&#10;</xsl:text>
+    <xsl:text>&#32;var&#32;hide=document.getElementById("hide");&#10;</xsl:text>
+    <xsl:text>&#32;hide.style.display='inline';&#10;</xsl:text>
+    <xsl:text>}&#10;</xsl:text>
+    <xsl:text>&#10;</xsl:text>
+    <xsl:text>function&#32;hide()&#32;{&#10;</xsl:text>
+    <xsl:text>&#32;var&#32;table=document.getElementById("explain");&#10;</xsl:text>
+    <xsl:text>&#32;table.style.display='none';&#10;</xsl:text>
+    <xsl:text>&#32;var&#32;show=document.getElementById("show");&#10;</xsl:text>
+    <xsl:text>&#32;show.style.display='inline';&#10;</xsl:text>
+    <xsl:text>&#32;var&#32;hide=document.getElementById("hide");&#10;</xsl:text>
+    <xsl:text>&#32;hide.style.display='none';&#10;</xsl:text>
+    <xsl:text>}&#10;</xsl:text>
+  </xsl:variable>
+  <xsl:template match="/">
+    <xsl:call-template name="page">
+      <xsl:with-param name="title"
+		      select="$title"/>
+      <xsl:with-param name="body">
+	<xsl:call-template name="results"/>
+      </xsl:with-param>
+      <xsl:with-param name="extra_head">
+	<script type="text/javascript">
+	  <xsl:value-of select="$js"/>
+	</script>
+      </xsl:with-param>
+      <xsl:with-param name="css_data">
+	<xsl:copy-of select="$css"/>
+      </xsl:with-param>
+    </xsl:call-template>
+  </xsl:template>
+</xsl:stylesheet>

@@ -11,6 +11,7 @@ require Exporter;
 
 use Carp qw(confess);
 use Data::Dumper;
+#use Digest::SHA qw(sha1);
 use File::Path;
 use File::Temp;
 
@@ -27,6 +28,9 @@ sub deal_with_warcs {
   my $count_warcs=0;
   foreach my $warc (@$warcs) {
     if($params->{'only_file'}) {
+      if(not -f $params->{'only_file'}) {
+	confess "I don't see your file ".$params->{'only_file'};
+      }
       my $only=$params->{'only_file'};
       if(not $warc=~m|$only$|) {
 	next;
@@ -62,14 +66,14 @@ sub get_handle_from_warc {
 #  my $p=shift;
   my $file=shift;
   if(not $file) {
-    die "I need a file here.";
+    confess "I need a file here.";
   }
   if(not -f $file) {
-    die "I don't see your file $file";
+    confess "I don't see your file $file";
   }
   my $grep=`grep -a Paper-Id $file`;
   chomp $grep;
-  $grep=~m|"Paper-Id: (\S+)"| or die "I don't see the handle in $grep";
+  $grep=~m|"Paper-Id: (\S+)"| or confess "I don't see the handle in $grep";
   my $handle=$1;
   return $handle;
 }
@@ -78,15 +82,15 @@ sub get_handle_from_file_name {
   my $p=shift;
   my $file=shift;
   if(not $file) {
-    die "I need a file here.";
+    confess "I need a file here.";
   }
   if(not -f $file) {
-    die "I don't see your file $file";
+    confess "I don't see your file $file";
   }
   my $paper_dir=$p->peren_dir_from_warc_dir($file);
   my $grep=`grep -a Paper-Id $file`;
   chomp $grep;
-  $grep=~m|"Paper-Id: (\S+)"| or die "I don't see the handle in $grep";
+  $grep=~m|"Paper-Id: (\S+)"| or confess "I don't see the handle in $grep";
   my $handle=$1;
   return $handle;
 }
@@ -144,10 +148,16 @@ sub sheet2text {
   $out_fufi=$p->{'paper_dir'}.'/'.$out_bana;
   ## do we need to do this again?
   if($p->i_need_new($out_fufi) and not $p->{'json_only'}) {
-   #my $out_xml="$out_file.xml";
+    #my $out_xml="$out_file.xml";
+    my $digest;
     if(not -f $tmp_file or -z $tmp_file) {
-      $lestfi->save_file($tmp_file);
+      $digest=$lestfi->save_file($tmp_file,$p->{'old_digests'});
     }
+    ## a new digest
+    if($digest) {
+      $p->{'old_digests'}->{$digest}=1;
+    }
+    print Dumper $p->{'old_digests'};
     my $log="$out_fufi.log";
     my $err="$out_fufi.err";
     my $s=$p->{'bin'}->{'pdf-stream'}." -t text $tmp_file $out_fufi > $log 2> $err";
@@ -159,10 +169,19 @@ sub sheet2text {
   ## do we need to do this again?
   if($p->i_need_new($out_fufi)) {
     #my $out_xml="$out_file.xml";
+    my $digest;
     if(not -f $tmp_file or -z $tmp_file) {
-      #print "tmp_file is $tmp_file\n";
-      $lestfi->save_file($tmp_file);
+      $digest=$lestfi->save_file($tmp_file,$p->{'old_digests'});
     }
+    ## a new digest
+    if($digest) {
+      $p->{'old_digests'}->{$digest}=1;
+    }
+    else {
+      print "I skip a PDF\n";
+      return 0;
+    }
+    #print Dumper $p->{'old_digests'};
     if(-z $tmp_file) {
       confess "$tmp_file is empty";
     }
@@ -198,12 +217,17 @@ sub warc2text {
   my $w=Warc::File->new({'file'=>$warc_file});
   #my $pls=$w->payloads('application/pdf','Futli');
   ## get pdf as payloads or resources
-  my $pls=$w->get_pdfs();
+  my $pls=$w->get_unique_pdfs();
   my $count_pls=0;
   while($pls->[$count_pls]) {
     my $lestfi=Warc::Lestfi->new($pls->[$count_pls]);
+    ## second argument to check if the current lestfi is unque.
+    ## this is obsolete
     $p->sheet2text($count_pls,$lestfi);
     $count_pls++;
+    if($p->{'max_pdfs'} and $count_pls == $p->{'max_pdfs'}) {
+      last;
+    }
   }
   if($count_pls) {
     $count_warcs_with_pdfs++;

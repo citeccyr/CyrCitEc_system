@@ -7,6 +7,6 @@
           media-type="text/plain"/>
   <template match="text()"/>
   <template match="/">
-    <value-of select="sum(//@stats_b)"/>
+    <value-of select="sum(//@stats_e)"/>
   </template>
 </stylesheet>

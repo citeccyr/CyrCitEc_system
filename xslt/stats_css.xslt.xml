@@ -1,0 +1,50 @@
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns="http://www.w3.org/1999/xhtml"
+                exclude-result-prefixes="#default">
+  <xsl:variable name="css">
+    <style type="text/css">
+      <xsl:text>th { &#10;</xsl:text>
+      <xsl:text>font-weight: normal;&#10;</xsl:text>
+      <xsl:text>text-align: left;&#10;</xsl:text>
+      <xsl:text>font-style: italics;&#10;</xsl:text>
+      <xsl:text>}&#10;</xsl:text>
+      <xsl:text>h1 { &#10;</xsl:text>
+      <xsl:text>font-size: 1.5;&#10;</xsl:text>
+      <xsl:text>}&#10;</xsl:text>
+      <xsl:text>h2 { &#10;</xsl:text>
+      <xsl:text>font-size: 1.25;&#10;</xsl:text>
+      <xsl:text>}&#10;</xsl:text>
+      <xsl:text>hr { &#10;</xsl:text>
+      <xsl:text>height: 1px;&#10;</xsl:text>
+      <xsl:text>color: #000000;&#10;</xsl:text>
+      <xsl:text>border: 0;&#10;</xsl:text>
+      <xsl:text>background-color: #000000;&#10;</xsl:text>
+      <xsl:text>}&#10;</xsl:text>
+      <xsl:text>table { &#10;</xsl:text>
+      <xsl:text>border-collapse: collapse;;&#10;</xsl:text>
+      <xsl:text>}&#10;</xsl:text>
+      <xsl:text>th, td { &#10;</xsl:text>
+      <xsl:text>padding-top: 2px;&#10;</xsl:text>
+      <xsl:text>}&#10;</xsl:text>
+      <xsl:text>dl { &#10;</xsl:text>
+      <xsl:text>padding-bottom: 0px;&#10;</xsl:text>
+      <xsl:text>}&#10;</xsl:text>
+      <xsl:text>.right_border { </xsl:text>
+      <xsl:text>padding-right: .5em;&#10;</xsl:text>
+      <xsl:text>padding-left: .5em;&#10;</xsl:text>
+      <xsl:text>border-right-style: solid;</xsl:text>
+      <xsl:text>border-right-width: 1px;</xsl:text>
+      <xsl:text>}&#10;</xsl:text>
+      <xsl:text>.sum { </xsl:text>
+      <xsl:text>padding-right: .5em;&#10;</xsl:text>
+      <xsl:text>padding-left: .5em;&#10;</xsl:text>
+      <xsl:text>}&#10;</xsl:text>
+      <xsl:text>.u {text-decoration: underline}&#10;</xsl:text>
+      <xsl:text>td.right { </xsl:text>
+      <xsl:text>text-align: right;</xsl:text>
+      <xsl:text>}&#10;</xsl:text>
+      <xsl:text>#explain {display: none}&#10;</xsl:text>
+    </style>
+  </xsl:variable>
+</xsl:stylesheet>

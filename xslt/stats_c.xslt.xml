@@ -1,0 +1,154 @@
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns="http://www.w3.org/1999/xhtml"
+                exclude-result-prefixes="#default">
+  <xsl:include href="converters.xslt.xml"/>
+  <xsl:include href="footer.xslt.xml"/>
+  <xsl:include href="page.xslt.xml"/>
+  <xsl:include href="pdf.xslt.xml"/>
+  <xsl:include href="stats_css.xslt.xml"/>
+  <xsl:include href="sums_row_table.xslt.xml"/>
+  <xsl:include href="intextref.xslt.xml"/>
+  <xsl:param name="date_pretty"/>
+  <xsl:param name="prevpath"/>
+  <xsl:variable name="prefix"
+                select="'spz:ranepa:intextrefs:'"/>
+  <xsl:variable name="papid"
+		select="/document/source/@handle"/>
+  <xsl:key name="con_ref"
+	   match="intextref"
+	   use="Reference" />
+  <xsl:variable name="old_count"
+		select="count(//intextref[generate-id(.) =
+			generate-id(key('con_ref',Reference)[1])])"/>
+  <xsl:variable name="count_a"
+		select="count(//reference)"/>
+  <xsl:variable name="count_e"
+		select="count(//reference[not(../../intextrefs/intextref/Reference/text()=
+			@num)])"/>
+  <xsl:variable name="count"
+		select="$count_a - $count_e"/>
+  <xsl:template name="title">
+    <xsl:text>The&#32;</xsl:text>
+    <xsl:value-of select="$count"/>
+    <xsl:text>&#32;reference</xsl:text>
+    <xsl:if test="$count &gt; 1">
+      <xsl:text>s</xsl:text>
+    </xsl:if>
+    <xsl:text>&#32;with contexts&#32;in&#32;</xsl:text>
+    <a>
+      <xsl:attribute name="href">
+	<xsl:value-of select="$linker"/>
+	<xsl:value-of select="$papid"/>
+      </xsl:attribute>
+      <xsl:call-template name="repec">
+	<xsl:with-param name="in"
+			select="$papid"/>
+      </xsl:call-template>
+    </a>
+  </xsl:template>
+  <xsl:template name="body">
+    <h1>
+      <xsl:call-template name="title"/>
+    </h1>
+    <xsl:text>&#10;</xsl:text>
+    <!-- ## fixme: this is partially duplicated in cit_bundle.xslt.xml -->
+    <dl>
+      <xsl:for-each select="//reference">
+	<xsl:variable name="num">
+	  <xsl:value-of select="./@num"/>
+	</xsl:variable>
+	<xsl:variable name="total"
+		      select="count(../../intextrefs/intextref/Reference[text()=$num])"/>
+	<xsl:if test="../../intextrefs/intextref/Reference/text()= $num">
+	  <xsl:text>&#10;</xsl:text>
+	  <dt>
+	    <xsl:value-of select="$num"/>
+	  </dt>
+	  <dd>
+	    <xsl:call-template name="hyperlink">
+              <xsl:with-param name="string"
+                              select="./from_pdf"/>
+            </xsl:call-template>
+	      <br/>
+	      <xsl:text>Total in-text references:&#32;</xsl:text>
+	      <xsl:value-of select="$total"/>
+	      <xsl:text>&#10;</xsl:text>
+	      <br/>
+	      <ol>
+		<xsl:for-each select="../../intextrefs/intextref/Reference[text()=$num]">
+		  <xsl:variable name="intext"
+				select=".."/>
+		  <li>
+		    <xsl:call-template name="show_intextref">
+		      <xsl:with-param name="intext"
+				      select="$intext"/>
+		    </xsl:call-template>
+		    <xsl:text>&#10;</xsl:text>
+		    <br/>
+		    <xsl:variable name="link">
+		      <xsl:value-of select="$link_start"/>
+		      <xsl:value-of select="./Start"/>
+		    </xsl:variable>
+		  </li>
+		</xsl:for-each>
+	      </ol>
+	  </dd>
+	  <xsl:text>&#10;</xsl:text>
+	</xsl:if>
+      </xsl:for-each>
+    </dl>
+    <xsl:text>&#10;</xsl:text>
+    <xsl:call-template name="footer"/>
+  </xsl:template>
+  <!--  <xsl:template name="show_intextref"> -->
+  <!--    <xsl:param name="intext"/> -->
+  <!--    <xsl:text>In-text reference with the coordinate start=</xsl:text> -->
+  <!--    <xsl:value-of select="$intext/Start"/> -->
+  <!--    <xsl:text>&#10;</xsl:text> -->
+  <!--    <dl style="margin: 0pt"> -->
+  <!--      <xsl:text>&#10;</xsl:text> -->
+  <!--      <dt> -->
+  <!--	<xsl:text>Prefix</xsl:text> -->
+  <!--      </dt> -->
+  <!--      <xsl:text>&#10;</xsl:text> -->
+  <!--      <dd> -->
+  <!--	<xsl:text>&#10;</xsl:text> -->
+  <!--	<xsl:value-of select="$intext/Prefix"/> -->
+  <!--	<xsl:text>&#10;</xsl:text> -->
+  <!--      </dd> -->
+  <!--      <dt> -->
+  <!--	<xsl:text>Exact</xsl:text> -->
+  <!--      </dt> -->
+  <!--      <xsl:text>&#10;</xsl:text> -->
+  <!--      <dd> -->
+  <!--	<xsl:text>&#10;</xsl:text> -->
+  <!--	<xsl:value-of select="$intext/Exact"/> -->
+  <!--	<xsl:text>&#10;</xsl:text> -->
+  <!--      </dd> -->
+  <!--      <xsl:text>&#10;</xsl:text> -->
+  <!--      <dt> -->
+  <!--	<xsl:text>Suffix</xsl:text> -->
+  <!--      </dt> -->
+  <!--      <xsl:text>&#10;</xsl:text> -->
+  <!--      <dd> -->
+  <!--	<xsl:text>&#10;</xsl:text> -->
+  <!--	<xsl:value-of select="$intext/Suffix"/> -->
+  <!--	<xsl:text>&#10;</xsl:text> -->
+  <!--      </dd> -->
+  <!--    </dl> -->
+  <!--  </xsl:template> -->
+  <xsl:template match="/">
+    <xsl:call-template name="page">
+      <xsl:with-param name="title">
+	<xsl:call-template name="title"/>
+      </xsl:with-param>
+      <xsl:with-param name="body">
+	<xsl:call-template name="body"/>
+      </xsl:with-param>
+      <xsl:with-param name="css_data">
+	<xsl:copy-of select="$css"/>
+      </xsl:with-param>
+    </xsl:call-template>
+  </xsl:template>
+</xsl:stylesheet>

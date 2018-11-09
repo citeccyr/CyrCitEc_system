@@ -7,6 +7,7 @@ use strict;
 use warnings;
 
 use Carp qw(confess);
+use Digest::SHA qw(sha1_base64);
 use IO::File;
 
 sub new {
@@ -80,8 +81,21 @@ sub save_file {
   my $f=shift;
   ## output file
   my $file=shift;
+  ## old_digests
+  #my $old_digests=shift // '';
   my $ih=$f->{'fh'} // $f->open_file();
   my $payload=$f->{'payload'} // $f->load_file();
+  #my $digest=&sha1_base64($payload);
+  #if($old_digests) {
+  #  if(ref($old_digests) ne 'HASH') {
+  #    confess "I need a hashref of old digests.";
+  #  }
+  #  foreach my $old_digest (keys %$old_digests) {
+  #    if($old_digest eq $digest) {
+  #	return '';
+  #    }
+  #  }
+  #}
   my $oh = IO::File->new();
   $oh->open("> $file") or confess "I could not open '$file'";
   ## no wide character semantics!
@@ -91,6 +105,7 @@ sub save_file {
   if(-z $file) {
     confess "My file $file is empty.";
   }
+  #return $digest;
   return $file;
 }
 

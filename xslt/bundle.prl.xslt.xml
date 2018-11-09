@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns="http://www.w3.org/1999/xhtml"
+                exclude-result-prefixes="#default">
+  <xsl:include href="converters.xslt.xml"/>
+  <xsl:include href="footer.xslt.xml"/>
+<!--  <xsl:include href="numbers.xslt.xml"/> -->
+  <xsl:include href="page.xslt.xml"/>
+  <xsl:include href="stats_css.xslt.xml"/>
+  <xsl:variable name="date"
+		select="/table/@date"/>
+  <xsl:variable name="date_pretty"
+		select="translate($date,'-','–')"/>
+  <xsl:variable name="title">
+    <xsl:text>Index of References</xsl:text>
+  </xsl:variable>
+  <xsl:template match="/">
+    <xsl:call-template name="page">
+      <xsl:with-param name="title"
+		      select="$title"/>
+      <xsl:with-param name="body">
+	<xsl:call-template name="bundles"/>
+      </xsl:with-param>
+      <xsl:with-param name="css_data">
+	<xsl:copy-of select="$css"/>
+         <style type="text/css">
+	 #main_tbl th { font-weight: bold; text-align: center; }
+         #main_tbl td { text-align: center; padding: 2px 2px; }
+         #main_tbl tr td:first-child { text-align: left}
+	 #main_tbl tr td:nth-child(5) { white-space: nowrap}
+         #main_tbl tr td:nth-child(6) { text-align: left; }
+         #main_tbl tr td:nth-child(7) { text-align: left; }
+         .even { background-color: #eee; }
+         </style>
+      </xsl:with-param>
+      <!-- prl: -->
+      <xsl:with-param name="extra_head">
+        <base href="../" />
+	<script src="js/reftbl.js"></script>
+        <script type="text/javascript"> window.onload = function () { ttoggle();}</script>
+      </xsl:with-param>
+
+    </xsl:call-template>
+  </xsl:template>
+  <xsl:template name="bundles">
+    <h1>
+      <xsl:value-of select="$title"/>
+    </h1>
+
+    <!-- prl: -->
+    <h3>References with => 10 citations in total: <xsl:value-of select="count(/bundles/bundle)"/></h3>
+    <h4>Explanatory table [<a class="u" href="#" id="explnk" onclick="return toggle_exp(this)">show</a>]</h4>
+    <table id="explain" style="display:none; margin-bottom: 20px;"><tr><td>[1]</td><td>metadata records available</td></tr></table>
+
+    <xsl:text>&#10;</xsl:text>
+    <table id="main_tbl">
+      <tr>
+	<th>
+	  <xsl:text>Unique references</xsl:text>
+	</th>
+	<th>
+	  <a href="#" onclick="return sort_table(1)">pubs</a>
+	</th>
+	<th>
+	  <a href="#" onclick="return sort_table(2)">cits</a>
+	</th>
+	<th>
+	  <a href="#" onclick="return sort_table(3)">with</a>
+	</th>
+	<th>
+          <a href="#" onclick="return sort_table(4)">dif</a>
+        </th>
+	<th>
+	  <xsl:text>distribution</xsl:text>
+	</th>
+	<th>
+	  common phrases
+	</th>
+	<th>
+	  topic models
+	</th>
+      </tr>
+      <xsl:for-each select="/bundles/bundle">
+	<xsl:sort select="@npub" data-type="number" order="descending"/>
+	<!-- xsl:sort select="@adist" data-type="number" order="ascending"/ -->
+        <xsl:text>&#10;</xsl:text>
+	<tr>
+	  <xsl:text>&#10;</xsl:text>
+	  <td>
+	    <xsl:value-of select="@author"/>
+	    <xsl:text>&#32;(</xsl:text>
+	      <xsl:value-of select="@year"/>
+	      <xsl:text>)&#32;</xsl:text>
+	      <xsl:value-of select="@title"/>
+	      <xsl:text>&#32;</xsl:text>
+	      <a>
+		<xsl:attribute name="href">
+		  <xsl:text>xml/</xsl:text>
+		  <xsl:value-of select="@bunshid"/>
+		  <xsl:text>.xml</xsl:text>
+		</xsl:attribute>
+		<xsl:text>(raw data)</xsl:text>
+	      </a>
+	  </td>
+          <xsl:text>&#10;</xsl:text>
+	  <td title="pubs">
+	    <a>
+	      <xsl:attribute name="href">
+		<xsl:text>pub/</xsl:text>
+		<xsl:value-of select="@bunshid"/>
+		<xsl:text>.html</xsl:text>
+	      </xsl:attribute>
+	      <xsl:value-of select="@npub"/>
+	    </a>
+	  </td>
+	  <xsl:text>&#10;</xsl:text>
+	  <td title="cits">
+	    <a>
+	      <xsl:attribute name="href">
+		<xsl:text>cit/</xsl:text>
+		<xsl:value-of select="@bunshid"/>
+		<xsl:text>.html</xsl:text>
+	      </xsl:attribute>
+	      <xsl:value-of select="@ncit"/>
+	    </a>
+	  </td>
+	  <xsl:text>&#10;</xsl:text>
+	  <td title="with">
+	    <a>
+	      <xsl:attribute name="href">
+		<xsl:text>cro/</xsl:text>
+		<xsl:value-of select="@bunshid"/>
+		<xsl:text>.html</xsl:text>
+	      </xsl:attribute>
+	      <xsl:value-of select="@ncro"/>
+	    </a>
+	  </td>
+	  <xsl:text>&#10;</xsl:text>
+	  <td><xsl:value-of select="@adist"/></td>
+	  <td title="distribution">
+	    <a>
+	      <xsl:attribute name="href">
+		<xsl:value-of select="$dis_url"/>
+		<xsl:value-of select="@bunshid"/>
+	      </xsl:attribute>
+	      <xsl:value-of select="@ndis"/>
+	    </a>
+	  </td>
+	  <td>
+	    <a>
+	      <xsl:attribute name="href">
+		<xsl:value-of select="$phrases_url"/>
+		?phrase=<xsl:value-of select="@bunshid"/>
+	      </xsl:attribute>
+	      <xsl:value-of select="@phrase"/>
+	    </a>
+	  </td>
+	  <td>
+	    <a>
+	      <xsl:attribute name="href">
+		<xsl:value-of select="$phrases_url"/>
+		?topic=<xsl:value-of select="@bunshid"/>
+	      </xsl:attribute>
+	      <xsl:value-of select="@topic"/>
+	    </a>
+	  </td>
+	  <xsl:text>&#10;</xsl:text>
+	</tr>
+	<xsl:text>&#10;</xsl:text>
+      </xsl:for-each>
+      <tr>
+	<td>
+	  Total: <xsl:value-of select="count(/bundles/bundle)"/>
+	</td>
+	<td>
+	  &#160;<xsl:value-of select="sum(/bundles/bundle/@npub)"/>
+	</td>
+	<td>
+	  &#160;<xsl:value-of select="sum(/bundles/bundle/@ncit)"/>
+	</td>
+	<td>
+	  &#160;<xsl:value-of select="sum(/bundles/bundle/@ncro)"/>
+	</td>
+	<td></td>
+	<td></td>
+	<td></td>
+      </tr>
+    </table>
+  </xsl:template>
+</xsl:stylesheet>

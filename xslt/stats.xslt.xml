@@ -1,0 +1,142 @@
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns="http://www.w3.org/1999/xhtml"
+                exclude-result-prefixes="#default">
+  <xsl:include href="explain_table.xslt.xml"/>
+  <xsl:include href="sums_row_table.xslt.xml"/>
+  <xsl:include href="page.xslt.xml"/>
+  <!--  <xsl:variable name="linker" -->
+  <!--		select="'https://socionet.ru/publication.xml?h='"/>-->
+  <xsl:variable name="papid"
+		select="/document/source/@handle"/>
+  <xsl:template name="title">
+    <xsl:text>Summary for references in paper&#32;</xsl:text>
+    <a>
+      <xsl:attribute name="href">
+	<xsl:value-of select="$linker"/>
+	<xsl:value-of select="$papid"/>
+      </xsl:attribute>
+      <xsl:value-of select="$papid"/>
+    </a>
+  </xsl:template>
+  <xsl:template name="body">
+    <h1>
+      <xsl:call-template name="title"/>
+    </h1>
+    <xsl:text>&#10;</xsl:text>
+    <h2>
+      <xsl:text>References</xsl:text>
+    </h2>
+    <xsl:text>&#10;</xsl:text>
+    <ol>
+      <xsl:for-each select="//reference">
+	<xsl:text>&#10;</xsl:text>
+	<li>
+	  <xsl:value-of select="./from_pdf"/>
+	</li>
+	<xsl:text>&#10;</xsl:text>
+      </xsl:for-each>
+    </ol>
+    <xsl:text>&#10;</xsl:text>
+    <h2>
+      <xsl:text>Contexts</xsl:text>
+    </h2>
+    <xsl:text>&#10;</xsl:text>
+    <ol>
+      <xsl:for-each select="//intextref">
+	<li>
+	  <xsl:text>&#10;</xsl:text>
+	  <dl>
+	    <xsl:text>&#10;</xsl:text>
+	    <dt>
+	      <xsl:text>Prefix</xsl:text>
+	    </dt>
+	    <xsl:text>&#10;</xsl:text>
+	    <dd>
+	      <xsl:text>&#10;</xsl:text>
+	      <xsl:value-of select="./Prefix"/>
+	      <xsl:text>&#10;</xsl:text>
+	    </dd>
+	    <xsl:text>&#10;</xsl:text>
+	    <dt>
+	      <xsl:text>Suffix</xsl:text>
+	    </dt>
+	    <xsl:text>&#10;</xsl:text>
+	    <dd>
+	      <xsl:text>&#10;</xsl:text>
+	      <xsl:value-of select="./Suffix"/>
+	      <xsl:text>&#10;</xsl:text>
+	    </dd>
+	  </dl>
+	</li>
+	<xsl:text>&#10;</xsl:text>
+      </xsl:for-each>
+    </ol>
+    <xsl:text>&#10;</xsl:text>
+    <h2>
+      <xsl:text>Linked references</xsl:text>
+    </h2>
+    <xsl:text>&#10;</xsl:text>
+    <ol>
+      <xsl:for-each select="//reference[@handle]">
+	<xsl:text>&#10;</xsl:text>
+	<li>
+	  <a>
+	    <xsl:attribute name="href">
+	      <xsl:value-of select="$linker"/>
+	      <xsl:value-of select="./@handle"/>
+	    </xsl:attribute>
+	    <xsl:value-of select="./from_pdf"/>
+	  </a>
+	</li>
+	<xsl:text>&#10;</xsl:text>
+      </xsl:for-each>
+    </ol>
+    <xsl:text>&#10;</xsl:text>
+    <h2>
+      <xsl:text>References without contexts</xsl:text>
+    </h2>
+    <xsl:text>&#10;</xsl:text>
+    <ol>
+      <xsl:for-each select="//reference">
+	<xsl:if test="not(../../intextrefs/intextref/Reference/text()= @num)">
+	  <xsl:text>&#10;</xsl:text>
+	  <li>
+	    <xsl:value-of select="./from_pdf"/>
+	  </li>
+	  <xsl:text>&#10;</xsl:text>
+	</xsl:if>
+      </xsl:for-each>
+    </ol>
+    <xsl:text>&#10;</xsl:text>
+  </xsl:template>
+    <xsl:template match="/">
+    <xsl:call-template name="page">
+      <xsl:with-param name="title">
+	<xsl:call-template name="title"/>
+      </xsl:with-param>
+      <xsl:with-param name="body">
+	<xsl:call-template name="body"/>
+      </xsl:with-param>
+      <!--      <xsl:with-param name="extra_head"> -->
+      <!--	<script type="text/javascript"> -->
+      <!--	  <xsl:value-of select="$js"/> -->
+      <!--	</script> -->
+      <!--      </xsl:with-param> -->
+      <!--      <xsl:with-param name="css_data"> -->
+      <!--	<style type="text/css"> -->
+      <!--	  <xsl:text>th { </xsl:text> -->
+      <!--	  <xsl:text>font-weight: normal;</xsl:text> -->
+      <!--	  <xsl:text>text-align: left;</xsl:text> -->
+      <!--	  <xsl:text>font-style: italics;</xsl:text> -->
+      <!--	  <xsl:text>}&#10;</xsl:text> -->
+      <!--	  <xsl:text>.u {text-decoration: underline}&#10;</xsl:text> -->
+      <!--	  <xsl:text>td { </xsl:text> -->
+      <!--	  <xsl:text>text-align: right;</xsl:text> -->
+      <!--	  <xsl:text>}&#10;</xsl:text> -->
+      <!--	  <xsl:text>#explain {display: none}&#10;</xsl:text> -->
+      <!--	</style> -->
+      <!--      </xsl:with-param> -->
+    </xsl:call-template>
+  </xsl:template>
+</xsl:stylesheet>

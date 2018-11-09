@@ -16,7 +16,11 @@ my $home_dir=$ENV{'HOME'};
 my $crontab_file="$home_dir/etc/crontab";
 my $self_file="$home_dir/perl/export_to_git";
 my $plib_dir="$home_dir/lib/perl";
+my $prl_dir="/home/prl";
+my $prl_work_dir="$prl_dir/perl";
 my $git_dir=$Cec::Paths::dirs->{'rep'};
+
+my $do_test=0;
 
 ## files to put in the repo
 my $to_repo;
@@ -26,7 +30,7 @@ $to_repo->{$self_file}=1;
 my $to_parse=&look_for($crontab_file,'bin');
 $to_parse=&look_for($crontab_file,'perl',$to_parse);
 
-## get perl calls form files in bin
+## get perl calls from files in bin
 foreach my $file (keys %{$to_parse->{'bin'}}) {
   $to_parse=&look_for($file,'perl',$to_parse);
 }
@@ -65,9 +69,13 @@ foreach my $doc_bana (`ls $doc_dir`) {
   $to_repo->{$doc_fufi}=1;
 }
 
+&add_prl();
+
 foreach my $in_file (keys %{$to_repo}) {
   my $out_file=$in_file;
   $out_file=~s|$home_dir|$git_dir|;
+  $out_file=~s|$prl_dir|$git_dir|;
+  print "$out_file is $out_file\n";
   my $dir=dirname($out_file);
   if(not -d $dir) {
     mkpath($dir);
@@ -80,13 +88,20 @@ foreach my $in_file (keys %{$to_repo}) {
   system("rsync -qa $in_file $out_file");
   my $ga_file=$in_file;
   $ga_file=~s|$home_dir/||;
-  system("cd $git_dir ; git add $ga_file");
+  $ga_file=~s|$prl_work_dir/||;
+  if(not $do_test) {
+    system("cd $git_dir ; git add $ga_file");
+  }
+}
+
+if($do_test) {
+  exit;
 }
 
 ## commit and upload
 &import_changes('/doc/');
-system("cd $home_dir/git ; git commit -a -m 'automated commit by export_to_git'");
-system("cd $home_dir/git ; git push -u origin master");
+system("cd $git_dir ; git commit -a -m 'automated commit by export_to_git'");
+system("cd $git_dir ; git push -u origin master");
 
 sub import_changes {
   my $regex=shift // confess "I need a regex here";
@@ -197,4 +212,35 @@ sub look_for {
     }
   }
   return $out;
+}
+
+sub add_prl {
+  foreach my $file (`find $prl_work_dir`) {
+    chomp $file;
+    if($file=~m|~$|) {
+      next;
+    }
+    if($file=~m|/index|) {
+      next;
+    }
+    if($file=~m|\.txt$|) {
+      next;
+    }
+    if($file=~m|\.json$|) {
+      next;
+    }
+    if($file=~m|\.xml$|) {
+      next;
+    }
+    if($file=~m|\.html| and not $file=~m|/templates/|) {
+      next;
+    }
+    if($file=~m|peren_test|) {
+      next;
+    }
+    if(-d $file) {
+      next;
+    }
+    $to_repo->{$file}=1;
+  }
 }

@@ -1,0 +1,86 @@
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns="http://www.w3.org/1999/xhtml"
+                exclude-result-prefixes="#default">
+  <xsl:include href="converters.xslt.xml"/>
+  <xsl:include href="page.xslt.xml"/>
+  <xsl:include href="pdf.xslt.xml"/>
+  <xsl:include href="footer.xslt.xml"/>
+  <xsl:include href="stats_css.xslt.xml"/>
+  <xsl:include href="sums_row_table.xslt.xml"/>
+  <xsl:param name="date_pretty"/>
+  <xsl:param name="prevpath"/>
+  <xsl:variable name="prefix"
+                select="'spz:ranepa:refs:'"/>
+  <xsl:variable name="papid"
+		select="normalize-space(/document/source/@handle)"/>
+  <xsl:variable name="count"
+		select="count(//reference)"/>
+  <xsl:template name="title">
+    <xsl:text>The&#32;</xsl:text>
+    <xsl:value-of select="$count"/>
+    <xsl:text>&#32;reference</xsl:text>
+    <xsl:if test="$count &gt; 1">
+      <xsl:text>s</xsl:text>
+    </xsl:if>
+    <xsl:text>&#32;in paper&#32;</xsl:text>
+    <a>
+      <xsl:attribute name="href">
+	<xsl:value-of select="$linker"/>
+	<xsl:value-of select="$papid"/>
+      </xsl:attribute>
+      <xsl:call-template name="repec">
+	<xsl:with-param name="in"
+			select="$papid"/>
+      </xsl:call-template>
+    </a>
+  </xsl:template>
+  <xsl:template name="body">
+    <h1>
+      <xsl:call-template name="title"/>
+    </h1>
+    <xsl:text>&#10;</xsl:text>
+    <dl>
+      <xsl:for-each select="//reference">
+	<dt>
+	  <xsl:value-of select="./@num"/>
+	</dt>
+	<dd>
+	  <xsl:text>&#10;</xsl:text>
+	    <xsl:call-template name="hyperlink">
+	      <xsl:with-param name="string"
+			      select="./from_pdf"/>
+	    </xsl:call-template>
+	    <xsl:text>&#10;</xsl:text>
+	    <br/>
+	    <xsl:variable name="link">
+	      <xsl:value-of select="$link_start"/>
+	      <xsl:value-of select="./@start"/>
+	    </xsl:variable>
+	    <a target="blank_">
+	      <xsl:attribute name="href">
+		<xsl:value-of select="$link"/>
+	      </xsl:attribute>
+	      <xsl:copy-of select="$checker"/>
+	    </a>
+	</dd>
+	<xsl:text>&#10;</xsl:text>
+      </xsl:for-each>
+    </dl>
+    <xsl:text>&#10;</xsl:text>
+    <xsl:call-template name="footer"/>
+  </xsl:template>
+  <xsl:template match="/">
+    <xsl:call-template name="page">
+      <xsl:with-param name="title">
+	<xsl:call-template name="title"/>
+      </xsl:with-param>
+      <xsl:with-param name="body">
+	<xsl:call-template name="body"/>
+      </xsl:with-param>
+      <xsl:with-param name="css_data">
+	<xsl:copy-of select="$css"/>
+      </xsl:with-param>
+    </xsl:call-template>
+  </xsl:template>
+</xsl:stylesheet>

@@ -39,7 +39,14 @@ sub new {
 ## analyse a line, returns something positive if it can jump
 sub add_line {
   my $r=shift;
-  my $line=shift;
+  my $line=shift // confess "I need a line here.";
+  my $count_line=shift;
+  if(not $r->{'start_line'}) {
+    $r->{'start_line'}=$count_line;
+  }
+  else {
+    $r->{'end_line'}=$count_line;
+  }
   ## a blank line
   if($line=~m|^\s*$|) {
     $r->{'count_last_blank_lines'}++;

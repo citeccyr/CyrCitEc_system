@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns="http://www.w3.org/1999/xhtml"
+                exclude-result-prefixes="#default">
+  <xsl:include href="converters.xslt.xml"/>
+<!--  <xsl:include href="pdf.xslt.xml"/> -->
+  <xsl:include href="footer.xslt.xml"/>
+<!--  <xsl:include href="numbers.xslt.xml"/> -->
+  <xsl:include href="page.xslt.xml"/>
+  <xsl:include href="stats_css.xslt.xml"/>
+  <xsl:variable name="date"
+		select="/table/@date"/>
+  <xsl:variable name="date_pretty"
+		select="translate($date,'-','–')"/>
+  <xsl:variable name="vic_cite">
+    <xsl:value-of select="normalize-space(/bundle/ref/reference[1]/@author)"/>
+    <xsl:text>&#32;</xsl:text>
+    <xsl:text>(</xsl:text>
+    <xsl:value-of select="normalize-space(/bundle/ref/reference[1]/@year)"/>
+    <xsl:text>)&#32;</xsl:text>
+    <xsl:text>“</xsl:text>
+    <xsl:value-of select="normalize-space(/bundle/ref/reference[1]/@title)"/>
+    <xsl:text>”</xsl:text>
+  </xsl:variable>
+  <xsl:template name="citer_authors">
+    <xsl:param name="for_citer"/>
+    <xsl:variable name="citer"
+		  select="$for_citer/../citer"/>
+    <xsl:for-each select="$citer/author">
+      <xsl:value-of select="normalize-space(.)"/>
+      <xsl:if test="not(position()=last())">
+	<xsl:text>, </xsl:text>
+      </xsl:if>
+    </xsl:for-each>
+  </xsl:template>
+  <xsl:template name="citer_year">
+    <xsl:param name="for_citer"/>
+    <xsl:variable name="citer"
+		  select="$for_citer/../citer"/>
+    <xsl:text>(</xsl:text>
+    <xsl:value-of select="normalize-space($citer/year)"/>
+    <xsl:text>)</xsl:text>
+  </xsl:template>
+  <xsl:template name="citer_title">
+    <xsl:param name="for_citer"/>
+    <xsl:variable name="citer"
+		  select="$for_citer/../citer"/>
+    <xsl:text>“</xsl:text>
+    <xsl:value-of select="normalize-space($citer/title)"/>
+    <xsl:text>”</xsl:text>
+  </xsl:template>
+  <xsl:template name="chicago">
+    <xsl:param name="for_citer"/>
+    <xsl:call-template name="citer_authors">
+      <xsl:with-param name="for_citer"
+		      select="."/>
+    </xsl:call-template>
+    <xsl:text>&#32;</xsl:text>
+    <xsl:call-template name="citer_year">
+      <xsl:with-param name="for_citer"
+		      select="."/>
+    </xsl:call-template>
+    <xsl:text>&#32;</xsl:text>
+    <xsl:call-template name="citer_title">
+      <xsl:with-param name="for_citer"
+		      select="."/>
+    </xsl:call-template>
+  </xsl:template>
+  <xsl:template name="link_from_citer">
+    <xsl:param name="citer"/>
+    <a>
+      <xsl:attribute name="href">
+	<xsl:value-of select="$linker"/>
+	<xsl:choose>
+	  <xsl:when test="string-length(../@found_in)">
+	    <xsl:value-of select="../@found_in"/>
+	  </xsl:when>
+	  <xsl:otherwise>
+	    <xsl:value-of select="$citer/../@found_in"/>
+	  </xsl:otherwise>
+	</xsl:choose>
+	<!-- <xsl:if test="$citer/../@pdf_url"> -->
+	<!--  <xsl:text>&amp;file=</xsl:text>  -->
+	<!--  <xsl:value-of select="$citer/../@pdf_url"/> -->
+	<!-- </xsl:if> -->
+	<!-- <xsl:value-of select="$citer/../@found_in"/> -->
+      </xsl:attribute>
+      <xsl:call-template name="citer_authors">
+	<xsl:with-param name="for_citer"
+			select="$citer"/>
+      </xsl:call-template>
+      <xsl:text>&#32;</xsl:text>
+      <xsl:call-template name="citer_year">
+	<xsl:with-param name="for_citer"
+			select="$citer"/>
+      </xsl:call-template>
+      <xsl:text>&#32;</xsl:text>
+      <xsl:call-template name="citer_title">
+	<xsl:with-param name="for_citer"
+			select="$citer"/>
+      </xsl:call-template>
+    </a>
+    <xsl:text>&#10;</xsl:text>
+  </xsl:template>
+</xsl:stylesheet>

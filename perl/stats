@@ -1,0 +1,249 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use Carp qw(confess);
+use Data::Dumper;
+use File::Basename;
+use File::Slurper;
+use File::Copy;
+use File::Temp;
+use Getopt::Std;
+use Lingua::EN::FindNumber;
+use List::Util qw(shuffle);
+use XML::LibXML;
+use URI::Escape;
+
+use Cec::Past;
+use Cec::Paths;
+use Cec::Common;
+use Cec::Dates;
+use Cec::Xslt;
+use Cec::Xml;
+use Cidig::Peren;
+use Cidig::Files;
+
+
+## -s show
+## -l limit to a handle expression
+my %o;
+getopts('snl:r:',\%o);
+## -s show
+
+my $do_show_series_only=$o{'s'};
+my $do_no_series=$o{'n'};
+my $do_limit=$o{'s'};
+my $do_restrict=$o{'r'};
+
+my $dirs=$Cec::Paths::dirs;
+my $files=$Cec::Paths::files;
+my $warc_dir=$dirs->{'warc'};
+my $input_dir=$dirs->{'input'};
+my $peren_base_dir=$dirs->{'peren'};
+my $xslt_dir=$dirs->{'xslt'};
+my $report_dir=$dirs->{'report'};
+my $series_stats_dir=$dirs->{'series_stats'};
+
+my $out_tmp_file='/tmp/stats';
+
+my $pretty_today=&Cec::Dates::pretty_today;
+my $today=&Cec::Dates::today;
+
+## read transformers
+my $x;
+foreach my $xslt_file (`ls $xslt_dir/stats_?.xslt.xml`) {
+  chomp $xslt_file;
+  my $bana=basename($xslt_file);
+  my $indic=substr($bana,0,length($bana)-9);
+  $x->{$indic}=&Cec::Xslt::get_sheet($indic);
+}
+
+my $p=Cidig::Peren->new({'verbose'=>'1',
+			 'force'=>0});
+my $tmp_file=$p->prep_file_list('/summary.xml');
+
+my $total_files=`grep -c ^ $tmp_file`;
+chomp $total_files;
+
+my $count_done=0;
+my $peren_dir;
+my $out_doc=XML::LibXML::Document->new('1.0','utf8');
+
+if(not $do_no_series) {
+  #my $cover_sheet=&Cec::Xslt::get_sheet('stats_series');
+  foreach my $file (`ls $series_stats_dir/*.xml`) {
+    chomp $file;
+    #print "I look at $file\n";
+    my $out_file=substr($file,0,length($file)-4). '.html';
+    $out_file=$report_dir.substr($out_file,length($series_stats_dir));
+    #print "$out_file\n";
+    my $source;
+    eval {
+      $source = XML::LibXML->load_xml(location => $file);
+    };
+    my $prevpath=&Cec::Past::get_prevpath($out_file);
+    my $params={};
+    if($prevpath) {
+      $params->{'prevpath'}="'$prevpath'";
+    }
+    $params->{'date_pretty'}="'$pretty_today'";
+    #my $results = $cover_sheet->transform($source,$params);
+    my $results=&Cec::Xslt::transform($source,'stats_series',$params);
+    &Cec::Xml::install_doc($results,$out_file);
+  }
+}
+
+if($do_show_series_only) {
+  exit;
+}
+
+
+## docs by series
+my $d;
+my $s;
+my $done;
+#foreach my $peren_dir (shuffle `cat $tmp_file`) {
+foreach my $peren_dir (sort `cat $tmp_file`) {
+  chomp $peren_dir;
+  if($do_restrict) {
+    if(not $peren_dir=~m|\Q$do_restrict\E|) {
+      next;
+    }
+  }
+  if($total_files and $count_done++ > $total_files) {
+    last;
+  }
+  my $in_file=$peren_dir.'/summary.xml';
+  if(not -f $in_file) {
+    print "I don't see $in_file\n";
+    next;
+  }
+  my $series_part=substr(dirname($peren_dir),length($peren_base_dir)+1);
+  my $part=uri_unescape(basename($peren_dir));
+  my $source;
+  eval {
+    $source = XML::LibXML->load_xml(location => $in_file);
+  };
+  if(not $source) {
+    print "I can't parse $in_file.\n";
+    next;
+  }
+  my $handle=&collect_handle($source,$in_file);
+  if(not $handle) {
+    print "I can't get a handle from $in_file.\n";
+    next;
+  }
+  my $series=&get_series($handle);
+  if(not $d->{$series}) {
+    $d->{$series}=XML::LibXML::Document->new('1.0','utf-8');
+  }
+  if(not $s->{$series}) {
+    $s->{$series}=$d->{$series}->createElement('series');
+  }
+  my $doc_ele=$d->{$series}->createElement('doc');
+  $doc_ele->setAttribute('handle',$handle);
+  #$doc_ele->setAttribute('eschan',uri_escape($handle));
+  my $rest=&get_rest($handle);
+  #$doc_ele->setAttribute('escres',uri_escape($rest));
+  ## $x is the transformer has
+  foreach my $indic (sort keys %$x) {
+    my $sheet=$x->{$indic};
+    my $out_file="$report_dir/$series_part/$indic/$part.html";
+    &Cidig::Files::prepare($out_file);
+    my $prevpath=&Cec::Past::get_prevpath($out_file);
+    my $params;
+    if($prevpath) {
+      $params->{'prevpath'}="'$prevpath'";
+    }
+    $params->{'date_pretty'}="'$pretty_today'";
+    my $results=&Cec::Xslt::transform($source,$x->{$indic},$params);
+    #my $results = $sheet->transform($source,$params);
+    my $count=&collect_number($results);
+    if(not $count=~m|^\d+$|) {
+      confess "You did not collect a number for $count";
+    }
+    $doc_ele->setAttribute($indic,$count);
+    if(not $count) {
+      if(-f $out_file) {
+	unlink $out_file;
+      }
+      next;
+    }
+    $results->toFile($out_tmp_file,1);
+    &Cec::Xml::install_doc($results,$out_file);
+  }
+  $s->{$series}->appendText("\n");
+  $s->{$series}->appendChild($doc_ele);
+  #print $s->{$series};
+}
+
+foreach my $series (keys %$d) {
+  $d->{$series}->setDocumentElement($s->{$series});
+  #my $safe = uri_escape($series);
+  #my $out_file="$report_dir/$save.xml";
+  my $out_file="$series_stats_dir/$series.xml";
+  &Cec::Xml::install_doc($d->{$series},$out_file);
+}
+
+sub get_series {
+  my $handle=shift;
+  $handle=~m|^([^:]+:[^:]+:[^:]+):|;
+  my $series=$1;
+  if(not $series) {
+    confess "I see no series in $handle";
+  }
+  return $series;
+}
+
+sub get_rest {
+  my $handle=shift;
+  my $rest=$handle;
+  $rest=~s|^([^:]+:[^:]+:[^:]+):||;
+  if(not $rest) {
+    confess "I see no rest in $handle";
+  }
+  return $rest;
+}
+
+sub collect_handle {
+  my $doc=shift;
+  my $in_file=shift;
+  my $source_ele=$doc->getElementsByTagName('source')->[0];
+  if(not $source_ele) {
+    print "I see no source in $in_file";
+    unlink $in_file;
+    return '';
+  }
+  my $handle=$source_ele->getAttribute('handle');
+  if(not $handle) {
+    print "I see no handle in $source_ele in $in_file.";
+    unlink $in_file;
+    return '';
+  }
+  #print "$handle\n";
+  return $handle;
+}
+
+sub collect_number {
+  my $result=shift;
+  my $title=$result->getElementsByTagName('title');
+  if(not $title) {
+    confess "I see no title in $result";
+  }
+  if($title=~m|^The\s+(\d+)\D+|) {
+    return $1;
+  }
+  if($title=~m|^The\s+single\s+|) {
+    return 1;
+  }
+  if($title=~m|^The\s+([a-z-]+)\s+|) {
+    my $word=$1;
+    my $number=numify($word);
+    if($number) {
+      return $number;
+    }
+    confess "I don't know the number of $word in $title";
+  }
+  confess "I see no count in '$title'";
+}

@@ -1,0 +1,59 @@
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns="http://www.w3.org/1999/xhtml"
+                exclude-result-prefixes="#default">
+  <xsl:include href="converters.xslt.xml"/>
+  <xsl:include href="footer.xslt.xml"/>
+  <xsl:include href="page.xslt.xml"/>
+  <xsl:include href="stats_css.xslt.xml"/>
+  <xsl:include href="sums_row_table.xslt.xml"/>
+    <xsl:variable name="title">
+    <xsl:value-of select="$project"/>
+    <xsl:text>&#32;GET for isyigw</xsl:text>
+    </xsl:variable>
+    <xsl:variable name="date"
+		  select="/table/@date"/>
+    <xsl:variable name="date_pretty"
+		select="translate($date,'-','–')"/>
+  <xsl:template match="/">
+    <xsl:call-template name="page">
+      <xsl:with-param name="title"
+		      select="$title"/>
+      <xsl:with-param name="body">
+	<xsl:call-template name="results"/>
+      </xsl:with-param>
+      <xsl:with-param name="css_data">
+	<xsl:copy-of select="$css"/>
+      </xsl:with-param>
+    </xsl:call-template>
+  </xsl:template>
+  <xsl:template name="results">
+    <h1>
+      <xsl:value-of select="$title"/>
+    </h1>
+    <xsl:text>&#10;</xsl:text>
+    <dl>
+      <!-- ## header row -->
+      <xsl:for-each select="/papers/paper">
+	<dt>
+	  <a>
+	    <xsl:attribute name="href">
+	      <xsl:value-of select="@f"/>
+	    </xsl:attribute>
+	    <xsl:value-of select="@f"/>
+	  </a>
+	  <xsl:text>&#xA0;&#xA0;</xsl:text>
+	  <xsl:value-of select="@h"/>
+	</dt>
+	<dd>
+	  <xsl:for-each select="./lines"/>
+	  <xsl:value-of select="."/>
+	  <br/>
+	  <xsl:text>&#10;</xsl:text>
+	</dd>
+	<xsl:text>&#10;</xsl:text>
+      </xsl:for-each>
+    </dl>
+    <xsl:call-template name="footer"/>
+  </xsl:template>
+</xsl:stylesheet>

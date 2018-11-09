@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns="http://www.w3.org/1999/xhtml"
+                exclude-result-prefixes="#default">
+  <xsl:variable name="questions">
+      <xsl:text>&#32;Send questions and comments to &lt;</xsl:text>
+      <a href="mailto:citru@repec.org">
+	<xsl:text>citru@repec.org</xsl:text>
+      </a>
+      <xsl:text>&gt;.&#10;</xsl:text>
+  </xsl:variable>
+  <xsl:variable name="funding">
+      <xsl:text>The Cirtec project is funded by </xsl:text>
+      <a href="http://www.ranepa.ru/eng/">
+	<xsl:text>RANEPA</xsl:text>
+      </a>
+      <xsl:text>.</xsl:text>
+  </xsl:variable>
+  <xsl:template name="footer">
+    <xsl:text>&#10;</xsl:text>
+    <hr/>
+    <xsl:text>&#10;</xsl:text>
+    <div class="footer">
+      <xsl:text>&#10;</xsl:text>
+      <xsl:text>This page is being maintained by&#32;</xsl:text>
+      <a href="http://openlib.org/home/krichel">
+	<xsl:text>Thomas Krichel</xsl:text>
+      </a>
+      <xsl:text>.</xsl:text>
+      <xsl:if test="string-length($date_pretty)">
+	<xsl:text>.&#10;It was last changed on&#10;</xsl:text>
+	<xsl:value-of select="$date_pretty"/>
+	<xsl:text>.&#10;</xsl:text>
+      </xsl:if>
+      <xsl:if test="string-length($prevpath)">
+	<xsl:variable name="prevdate">
+	  <xsl:value-of select="substring-before($prevpath,'/')"/>
+	</xsl:variable>
+	<xsl:variable name="prevdate_pretty">
+	  <xsl:value-of select="translate($prevdate,'-','–')"/>
+	</xsl:variable>
+	<xsl:variable name="prevurl">
+	  <xsl:text>/stats/</xsl:text>
+	  <xsl:value-of select="$prevpath"/>
+	</xsl:variable>
+	<xsl:text>&#32;We have an&#32;</xsl:text>
+	<a>
+	  <xsl:attribute name="href">
+	    <xsl:value-of select="$prevurl"/>
+	  </xsl:attribute>
+	  <xsl:text>earlier version</xsl:text>
+	</a>
+	<xsl:text>.</xsl:text>
+      </xsl:if>
+      <xsl:value-of select="$questions"/>
+      <xsl:copy-of select="$funding"/>
+    </div>
+    <xsl:text>&#10;</xsl:text>
+  </xsl:template>
+</xsl:stylesheet>
