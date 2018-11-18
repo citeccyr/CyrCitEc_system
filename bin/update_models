@@ -1,0 +1,8 @@
+#!/bin/bash
+
+raw_w2v fixes_archive_only > ~/var/log/archive_raw.log 2> ~/var/log/archive_raw.err
+raw_w2v fixes_series_only > ~/var/log/series_raw.log 2> ~/var/log/series_raw.err
+raw_w2v fixes_handle_only > ~/var/log/handle_raw.log 2> ~/var/log/handle_raw.err
+stem_w2v fixes_archive_only > ~/var/log/archive_stem.log 2> ~/var/log/archive_stem.err
+stem_w2v fixes_series_only > ~/var/log/series_stem.log 2> ~/var/log/series_stem.err
+stem_w2v fixes_handle_only > ~/var/log/handle_stem.log 2> ~/var/log/handle_stem.err

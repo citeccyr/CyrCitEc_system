@@ -20,8 +20,8 @@ my $self_file="$home_dir/perl/export_to_git";
 my $plib_dir="$home_dir/lib/perl";
 my $prl_dir="/home/prl";
 my $prl_work_dir="$prl_dir/perl";
-my $git_dir=$Cec::Paths::dirs->{'rep'};
-my $bin_dir=$Cec::Paths::dirs->{'bin'};
+my $git_dir=$dirs->{'rep'};
+my $bin_dir=$dirs->{'bin'};
 
 my $do_test=0;
 
