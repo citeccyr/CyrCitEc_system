@@ -30,8 +30,6 @@
 	  <xsl:call-template name="show_intextrefs">
 	    <xsl:with-param name="local"
 			    select="."/>
-	    <xsl:with-param name="link_exact"
-			    select="'true'"/>
 	  </xsl:call-template>
 	  <!--  </xsl:if> -->
 	</xsl:variable>

@@ -11,7 +11,9 @@ use File::Slurper;
 use List::Util qw(shuffle);
 
 use Cec::Paths;
+my $dirs=$Cec::Paths::dirs;
 
+## FixMe: should take from Cec::Paths
 my $home_dir=$ENV{'HOME'};
 my $crontab_file="$home_dir/etc/crontab";
 my $self_file="$home_dir/perl/export_to_git";
@@ -19,6 +21,7 @@ my $plib_dir="$home_dir/lib/perl";
 my $prl_dir="/home/prl";
 my $prl_work_dir="$prl_dir/perl";
 my $git_dir=$Cec::Paths::dirs->{'rep'};
+my $bin_dir=$Cec::Paths::dirs->{'bin'};
 
 my $do_test=0;
 
@@ -26,6 +29,12 @@ my $do_test=0;
 my $to_repo;
 $to_repo->{$crontab_file}=1;
 $to_repo->{$self_file}=1;
+
+## from bin, manually
+$to_repo->{"$bin_dir/daily_update"}=1;
+$to_repo->{"$bin_dir/get_vicwork"}=1;
+$to_repo->{"$bin_dir/update_models"}=1;
+$to_repo->{"$bin_dir/pdf-stream-cli"}=1;
 
 my $to_parse=&look_for($crontab_file,'bin');
 $to_parse=&look_for($crontab_file,'perl',$to_parse);

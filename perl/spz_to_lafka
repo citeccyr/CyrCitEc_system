@@ -22,16 +22,19 @@ use Cec::Paths;
 my $motto='spz';
 
 my %o;
-getopts('ia:usd:w:n',\%o);
+getopts('pvr:ia:usd:w:n',\%o);
 
 my $do_date=$o{'d'} // '';
+my $do_verbose=$o{'v'} // '';
 ## update for today
 my $do_update=$o{'u'} // '';
+my $do_restrict_paper=$o{'r'} // '';
 my $do_ago=$o{'a'} // '';
 my $do_input_read=$o{'i'} // '';
 my $skip_input_read=$o{'s'} // '';
 my $do_wait=$o{'w'} // 0;
 my $skip_existing_warc=$o{'n'} // '';
+my $skip_existing_pdf=$o{'p'} // '';
 
 my $dirs=$Cec::Paths::dirs;
 my $files=$Cec::Paths::files;
@@ -41,7 +44,7 @@ my $bada_dir=$dirs->{'bada'};
 my $bada_sum=$Cec::Paths::files->{'bada_sum'};
 
 my $today=&Cec::Dates::today;
-## use input from a date
+## use input from a dateh
 if($do_date and not $do_date=~m|^\d{4}-\d{2}-\d{2}$|) {
   print "I can't deal with your date $do_date";
   exit;
@@ -57,10 +60,16 @@ if(not $do_date) {
 }
 
 ## files and directories
+
 my $handles_file=$files->{'futlis'};
 my $entry_dir="$bada_dir/entry";
 my $entry_stylesheet = &Cec::Xslt::get_sheet('entry_date');
 my $futli_stylesheet = &Cec::Xslt::get_sheet('futlis_from_spz');
+
+####
+#&renew_handles_file($dirs->{'input'});
+#die;
+###
 
 my $in_dir=$dirs->{'input'};
 my $in;
@@ -89,15 +98,24 @@ else {
     &renew_handles_file($dirs->{'input'});
   }
   elsif(not $skip_input_read) {
-    #print "I'm finding last time in $in_dir ..." ;
-    my $in_time=&Cidig::Files::find_most_recent_time_in_directory($in_dir);
-    #print " as $in_time.\n";
-    my $handles_time=&Cidig::Files::mtime($handles_file);
-    if($in_time > $handles_time) {
-      &renew_handles_file("$in_dir/");
+    if($do_verbose) {
+      print "I'm finding last time in $in_dir ..." ;
+    }
+    if($do_restrict_paper) {
+      print "I am not renewing the handles files.\n";
     }
     else {
-      print "I don't need to renew $handles_file\n";
+      my $in_time=&Cidig::Files::find_most_recent_time_in_directory($in_dir);
+      if($do_verbose) {
+	print " as $in_time.\n";
+      }
+      my $handles_time=&Cidig::Files::mtime($handles_file);
+      if($in_time > $handles_time) {
+	&renew_handles_file("$in_dir/");
+      }
+      else {
+	print "I don't need to renew $handles_file\n";
+      }
     }
   }
   $in=&Lafka::Json::load($handles_file);
@@ -108,19 +126,32 @@ my $max_done=$ARGV[0] // 1;
 if($do_update=$o{'u'} or $do_ago=$o{'a'}) {
   $max_done=0;
   ## but we need to set a wait
-  $do_wait=10;
+  $do_wait=1;
 }
 
 my $i=Lafka::Input->new({'ris' => 'spz',
 			 'skip_existing' => $skip_existing_warc,
+			 'skip_pdf' => $skip_existing_pdf,
 			 'wait' => $do_wait,
 			 'verbose'=>1});
 #			 'conf'=> 'lafka_spz'});
 ## do a limited amount
 my $count_done=0;
 
+
 ## main look to get things done
 foreach my $papid (shuffle (keys %$in)) {
+  if($do_restrict_paper) {
+    if(not $papid=~m|$do_restrict_paper|i) {
+      if($do_verbose) {
+	print "I skip $papid because of $do_restrict_paper\n";
+      }
+      next;
+    }
+    else {
+      print "I look at $papid\n";
+    }
+  }
   my $futlis=$in->{$papid};
   if(not $futlis) {
     confess "I need futlis for $papid.";
@@ -147,7 +178,13 @@ sub renew_handles_file {
   my $count=0;
   my $xslt_dir=$dirs->{'xslt'} // confess "I need an xslt directory";
   foreach my $file (`find $dir -type f -name '*.xml'`) {
+    if($do_verbose) {
+      print "I found $file";
+    }
     $out=add_to_get($file,$out);
+  }
+  if($do_verbose) {
+    print Dumper $out;
   }
   &Lafka::Json::save($out,$handles_file);
 }
@@ -176,8 +213,8 @@ sub add_to_get {
     $source = XML::LibXML->load_xml(location => $file);
   };
   if(not $source) {
-    print "I can't parse $file\n";
-    next;
+    print "I can't parse $file.\n";
+    return $to_get;
   }
   my $entry_results = $entry_stylesheet->transform($source);
   my @lines;
@@ -199,12 +236,17 @@ sub add_to_get {
     my @parts=split(' ',$line);
     ## no futli?
     if(not $parts[1]) {
-      print "I have no futly for $file\n";
+      if($do_verbose) {
+	print "I have no futli for $file\n";
+      }
       next;
     }
     my $count=1;
     while($parts[$count]) {
-      push(@{$to_get->{$parts[0]}},$parts[$count++]);
+      my $handle=lc($parts[0]);
+      my $url=$parts[$count++];
+      #print "I add $url to $handle\n";
+      push(@{$to_get->{$handle}},$url);
     }
   }
   return $to_get;

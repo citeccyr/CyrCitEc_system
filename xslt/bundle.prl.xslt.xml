@@ -29,8 +29,8 @@
          #main_tbl td { text-align: center; padding: 2px 2px; }
          #main_tbl tr td:first-child { text-align: left}
 	 #main_tbl tr td:nth-child(5) { white-space: nowrap}
-         #main_tbl tr td:nth-child(6) { text-align: left; }
-         #main_tbl tr td:nth-child(7) { text-align: left; }
+         #main_tbl tr td:nth-child(6) { }
+         #main_tbl tr td:nth-child(7) { }
          .even { background-color: #eee; }
          </style>
       </xsl:with-param>

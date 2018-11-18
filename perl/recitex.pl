@@ -34,6 +34,7 @@ EE
 
 my $US = "\037";   # ASCII unit separator
 use Encode qw( decode encode );
+use HTML::HTML5::Entities qw( &decode_entities &encode_entities );
 
 
 # "pages" template of the reference (... pp. 1-999), bilingual:
@@ -52,8 +53,11 @@ $etal = decode("utf8", $etal, Encode::FB_CROAK );
 $and_or_comma = "\\s*(?:,\\s*|\\band\\s+|\\bп╦\\s+)";
 $and_or_comma = decode("utf8", $and_or_comma, Encode::FB_CROAK );
 
-# Da De Den Der
-$dade = "(?:[Dd][ae]|[Dd]e[nr])";
+# Da De Den Der Dos
+# $dade = "(?:[Dd][ae]|[Dd]e[nr]|[Dd]os)";
+# 20181116: + Van Von van't + п▓п╟п╫ п╓п╬п╫ п■п╣я─ + word boundaries
+$dade = "\\b(?:[Vv][oa]n(?:\s*'t\s+)?|[Dd][ae]|[Dd]e[nr]|[Dd]os|[п▓п╡]п╟п╫|[п╓я└]п╬п╫|[п■п╢]п╣я─)\\b";
+$dade = decode("utf8", $dade, Encode::FB_CROAK );
 
 $nbsp = pack( "C", 0xa0 );
 $nbsp = decode("cp1251", $nbsp, Encode::FB_CROAK );
@@ -322,6 +326,7 @@ push @ref_marker,
   "(?:п╦я│п©п╬п╩я▄п╥п╬п╡п╟п╫п╫я▀п╣|я─я┐я│я│п╨п╬я▐п╥я▀я┤п╫я▀п╣)\\s*п╦я│я┌п╬я┤п╫п╦п╨п╦\\s*\$",
  "п╩\\s*п╦\\s*я┌\\s*п╣\\s*я─\\s*п╟\\s*я┌\\s*я┐\\s*я─\\s*п╟\\s*\$",
  "п╦я│я┌п╬я┤п╫п╦п╨п╦\\s*\$",
+ "^\\s*я│я│я▀п╩п╨п╦\\s*\$",
  $ref_keyl1;
 for $rk ( @ref_marker ) {
 	$rk = decode("utf8", $rk, Encode::FB_CROAK );
@@ -392,7 +397,7 @@ $notname = decode("utf8", $notname, Encode::FB_CROAK );
 goto UNNUM_REF if ! $enum;
 
 $refno = 1;
-if( $references !~ s/^[\s\[]*$refno[\s\]]*$dot\s*(?:(?:[Vv][oa]n\s*(?:'t\s+)?|$dade\s*)*(\b[[:upper:]]))/$1/sx ) {
+if( $references !~ s/^[\s\[]*$refno[\s\]]*$dot\s*(?:(?:                       $dade\s*)*(\b[[:upper:]]))/$1/sx ) {
 	print <<EE;
 No references found (2)
      </input>
@@ -408,8 +413,8 @@ $pos1 = $pos + length( $& ) - 1; # -> to the beginning of the ref 1
 $pos = $pos1;
 print "      <linking enum=\"1\">\n";
 $refno = 2;
-$re1 = $references =~ /(.*?)^[\s\[]*$refno[\s\]]*$dot\W*(([Vv][oa]n\s*('t\s+)?|$dade\s*)*(\b[[:upper:]]))/msx ? 1 : 0;
-# -- reference starts from the beginning of the line                                    \_+ -- wrong
+$re1 = $references =~ /(.*?)^[\s\[]*$refno[\s\]]*$dot\W*( ($dade\s*)* (\b[[:upper:]]) )/msx ? 1 : 0;
+# -- reference starts from the beginning of the line
 # print "===re1:$re1//$&\n";  exit;
 $dopreref = 1;
 while(
@@ -424,7 +429,7 @@ while(
 #20181025 back        last if $pos1 > $RLEN;    # 20181023 2-nd Parinov's rule: no more than $RLEN chars
 	$pos1 += $pos;
 # print8( "===R ".substr($references, 0, 800)."\n===\n" );
-	if( $references =~ s/^(?:[Vv][oa]n\s*(?:'t\s+)?|$dade\s*)*(\b[[:upper:]])/$1/sx
+	if( $references =~   s/^(?:                       $dade\s*)*(\b[[:upper:]])/$1/sx
 # Prevoo  M.L.,  van't  Hof  M.A.,  Kuper  H.H.,
 
 #     ||         # false $refno match, search further
@@ -565,19 +570,19 @@ while( $src =~ /\[([^\]]{1,100})\]/s ) {
 	while( $srcl =~ /[.?!]\s+(\W*[[:upper:]])/s && length( $' ) >= 200 ) {
 		$srcl = $1.$';
 	}
+
+# 20181105 cancelled!
 # 20181021 do not let the prefix to expand to the previous page:
-	$epage = $page[$pos2line[$pos]];
-	$prefpos = $oprefpos = $pos - length $srcl;
-# print8( "===EPOS:$pos;EPOSM:".$posmap[$pos].";EPAGE:$epage;OLDprefpos:$oprefpos;\n" );
-# print8( "===SRCL:$srcl\n" );
-	while( $epage > $page[$pos2line[$prefpos]] ) {
-# print8( "===LINE($prefpos):$pos2line[$prefpos]:".substr($srcl,$prefpos,11).";\n" );
-		++ $prefpos;
-	}
-# print8( "===PREFPOS:$prefpos;PREFPOSM:".$posmap[$prefpos].";OLDprefpos:$oprefpos;\n" );
-# print8( "===substr $srcl, $prefpos -= $oprefpos\n" );
-	$pref = substr $srcl, ($prefpos -= $oprefpos);
+#        $epage = $page[$pos2line[$pos]];
+#        $prefpos = $oprefpos = $pos - length $srcl;
+#        while( $epage > $page[$pos2line[$prefpos]] ) {
+#                ++ $prefpos;
+#        }
+#        $pref = substr $srcl, ($prefpos -= $oprefpos);
 #/20181021
+	$pref = $srcl;
+#/20181105
+
 	$pref =~ s/-\n//gms;
 # $pref : no more than 400, word boundary aligned:
 	$pref = substr $pref, -400;
@@ -603,7 +608,8 @@ while( $src =~ /\[([^\]]{1,100})\]/s ) {
 	$ref =~ s/\n//gisx;
 	$ref =~ s/$pp//gisx;
 # print8( "1===$ref\n" );
-#        next if $exact =~ /[[:alpha:]]/;
+# 20131114: numeric citations must not start with non-digit:
+	next if $ref =~ /^\s*[^1-9]/;
 	$ref =~ s/[[:alpha:]]//gs;
 	@rlist = map{
 # print8( "====$_|\n" );
@@ -673,7 +679,7 @@ $n_match = join( "|", @n_match );
 
 # print8( "$n_match\n" ); # exit;
 $srcl = "";
-while( $src =~ /[\[\(]?($n_match)[\.\s]*([:\s]*$pp | [,\d\s]*)?[\]\)]?/isx )
+while( $src =~ /[\[\(]?($n_match)[\.\s]*([\s:]*$pp | [,\d\s]*)?[\]\)]?/isx )
 # while( $src =~ /[\[\(]?($n_match)[\.\s]*(:?$pp | [,\d\s]*)?[\]\)]?/isx )        # ?: ?
 {
 	$pos += length $`;      # position of 'EXACT'
@@ -774,16 +780,20 @@ Err: no match for "22094:Treisman  (1996a,";
 		$srcl = $1.$';
 	}
 
+# 20181105 cancelled!
 # 20181021 do not let the prefix to expand to the previous page:
-	$epage = $page[$pos2line[$pos]];
-	$prefpos = $oprefpos = $pos - length $srcl;
-
-	while( $epage > $page[$pos2line[$prefpos]] ) {
-		++ $prefpos;
-	}
-
-	$pref = substr $srcl, ($prefpos -= $oprefpos);
+#        $epage = $page[$pos2line[$pos]];
+#        $prefpos = $oprefpos = $pos - length $srcl;
+#
+#        while( $epage > $page[$pos2line[$prefpos]] ) {
+#                ++ $prefpos;
+#        }
+#
+#        $pref = substr $srcl, ($prefpos -= $oprefpos);
 #/20181021
+	$pref = $srcl;
+#/20181105
+
 	$pref =~ s/-\n//gms;
 # $pref : no more than 400, word boundary aligned:
 	$pref = substr $pref, -400;
@@ -837,10 +847,17 @@ exit 0;
 
 sub eent {
 	my $t = shift;
+# =v2
+	decode_entities( $t         );
+#        decode_entities( $t         );
+	encode_entities( $t,  '<&>' );
+# =cut
+=v1
 	$t =~ s/&amp;/&/g;
 	$t =~ s/&/&amp;/g;
 	$t =~ s/</&lt;/g;
 	$t =~ s/>/&gt;/g;
+=cut
 	return $t;
 }
 
@@ -881,37 +898,38 @@ sub prref {
 	# 8. Preston A,Johnston D. The Future of
 	# if( $title =~ /^((([[:alpha:]$dashs]){2,},?\s)(\s*[^\d\W]{1,2}\.){1,3}[,\s]*)+/sxu )
 
-#Н.Н.Козлов. Теорема для генетического кода. ДАН. 2002.  Т. 382.
-# rus/ipmpnt/p2006-93
+# ? ? van der Lugt N.M., van Kampen A., Walther  F.J.,...
+# ? ? Bates,  C.E.  and  H.  White  (1988)
+# ? ? Kramer B, Bosman J. Survey of
+# ? ? Kogalovsky, M., Parinov, S. The taxonomy of
+# ? rus/ipmpnt/p2006-93|Н.Н.Козлов. Теорема для генетического кода. ДАН. 2002.  Т. 382.
+# 20181113|neicon/aerospace/y:2016:i:3:p:11-25|J. Santiago-Prowald Large Deployable Antennas Mechanical Concepts
+# 20181116|neicon/vestifm/y:2014:i:2:p:48-51|Ван дер Варден Б. Л. Алгебра.
 # print8("===$title///\n");
 	if( $title =~ /^(?:\s*
 		  (?:
-			(?:[Vv][oa]n\s*('t\s+)?|$dade\s*)*
+			(?:                     $dade\s*)*
 			(?:(?:\s* [[:upper:]] (?:[[:alpha:]'$dashs])+ )+,?\s )
 			(?:\s*[[:alpha:]]{1,2}\.){1,3}(and|&|,|\s)*
 		  ) |
 		  (?:
 		       (?:\s*[[:alpha:]]{1,2}\.){1,3}
-		       (?:\s*[Vv][oa]n\s*('t\s+)?|(?:[Dd][ae]|[Dd]e[nr])\s*)*
+		       (?:\s*                     $dade\s*)*
 		       (?:(?:\s*[[:upper:]] (?:[[:alpha:]'$dashs])+ )+ (\s|,|\.|&|and)*\s? )
 		  ) )+/sxu
-#               van der Lugt N.M., van Kampen A., Walther  F.J.,...
-#               Bates,  C.E.  and  H.  White  (1988)
-	# 2. Kramer B, Bosman J. Survey of
-	# 12. Kogalovsky, M., Parinov, S. The taxonomy of
-	 || $title =~ /^(([[:alpha:]]{2,}[,\s])(\s*[:alpha:]{1,2}  ) [.,\s]*)+\.\s*/sxu
+	 || $title =~ /^(([[:alpha:]]{2,}[,\s])(\s*[[:alpha:]]{1,2}  ) [.,\s]*)+\.\s*/sxu
 	) {                                     #  \w was here - 20181023
 		$title = $';
 		$author = $&;
 
 		#2A $author =~ s/\b\w{1,2}\b//gu;
 #20181015:
-  $author =~ s/ \b(?:[Vv][oa]n\s*(?:'t\s+)?|$dade\s*)+(\b[[:upper:]]) /$1/gx;
+  $author =~ s/ \b(?:                       $dade\s*)+(\b[[:upper:]]) /$1/gx;
 #
 		$author =~ s/\b\w  ?  \b//gux;
 		$author =~ s/[^[:alpha:]'$dashs]/ /gu;
 		$author =~ s/\s*\band\b\s*/ /gu;
-# print8( "===T,A:$title===$author===\n" ); exit;
+# print8( "===A:$author|T:$title|\n" ); # exit;
 	}
 	undef $url;
 

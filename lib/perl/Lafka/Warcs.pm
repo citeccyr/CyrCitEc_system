@@ -54,6 +54,30 @@ sub remove_warc {
   delete $m->{$fufi};
 }
 
+# ## obsoleted with repetiton problem of 2018-10
+# ## check if we have something new in the first vs the second
+# sub HAS_FIRST_SOMETHING_NEW_OLD {
+#   my $m=shift;
+#   my $w1_fufi=shift;
+#   my $w2_fufi=shift;
+#   my $w1=$m->import_warc($w1_fufi);
+#   my $w2=$m->import_warc($w2_fufi);
+#   my $pd1=$w1->get_payload_digest();
+#   my $pd2=$w2->get_payload_digest();
+#   foreach my $pd (keys %$pd1) {
+#     if(not $pd2->{$pd1->{$pd}}) {
+#       if($m->{'verbose'}) {
+# 	print "I found a new payload.\n";
+#       }
+#       return 1;
+#     }
+#   }
+#   if($m->{'verbose'}) {
+#     print "I don't see a new payload.\n";
+#   }
+#   return 0;
+# }
+
 ## check if we have something new in the first vs the second
 sub has_first_something_new {
   my $m=shift;
@@ -61,20 +85,31 @@ sub has_first_something_new {
   my $w2_fufi=shift;
   my $w1=$m->import_warc($w1_fufi);
   my $w2=$m->import_warc($w2_fufi);
-  my $pd1=$w1->get_payload_digest();
-  my $pd2=$w2->get_payload_digest();
-  foreach my $pd (keys %$pd1) {
-    if(not $pd2->{$pd1->{$pd}}) {
-      if($m->{'verbose'}) {
-	print "I found a new payload.\n";
+  my $d1=$w1->get_digests();
+  my $d2=$w2->get_digests();
+  my $old_digests={};
+  ## put all the old digests in a hash
+  my @types=('block','payload');
+  foreach my $type (@types) {
+    foreach my $d (keys %{$d2->{$type}}) {
+      $old_digests->{$d}=1;
+    }
+  }
+  ## if any digest of the second is found in the first, we return false
+  foreach my $type (@types) {
+    foreach my $d (keys %{$d1->{$type}}) {
+      if($old_digests->{$d}) {
+	if($m->{'verbose'}) {
+	  print "I see a first old payload $d, nothing new.\n";
+	}
+	return 0;
       }
-      return 1;
     }
   }
   if($m->{'verbose'}) {
-    print "I don't see a new payload.\n";
+    print "I pass the payload check for something new.\n";
   }
-  return 0;
+  return 1;
 }
 
 ## appends first to seond

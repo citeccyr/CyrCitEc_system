@@ -17,6 +17,9 @@ use Lafka::Exclude;
 use Lafka::Paths;
 use Lafka::Warcs;
 
+## apartemnt 79 wait changes
+## pid --> papid
+
 sub new {
   my $this=shift;
   my $class=ref($this) || $this;
@@ -31,8 +34,9 @@ sub new {
     $i->{$key}=$params->{$key};
   }
   my $ris=$i->{'ris'} // confess "I need a ris here.";
+  ## read the configuration file
   $i->{'conf'}=Cidig::Conf->get({'conf'=>$ris.'.lafka'});
-  ## open the warc manage
+  ## open the warc manager
   $i->{'m'}=Lafka::Warcs->new();
   #my $ris=$i->{'conf'}->{'ris'} // '';
   #if(not $ris) {
@@ -49,7 +53,8 @@ sub new {
   $i->{'exclude'}=Lafka::Exclude->new();
   ## get the fullfiller from the configuration.
   my $fullfiller_string=$i->{'conf'}->{'fullfillers'} // confess "I need this defined here.";
-  ## the fullfillers are a string, they need to made a reference fullfillers;
+  ## the fullfillers are configured as a comma-separated string
+  ## we make aneed to made an array reference fullfillers;
   $i->{'fullfillers'}=[];
   my $count_fullfillers=0;
   foreach my $type (split(/,/,$fullfiller_string)) {
@@ -58,13 +63,14 @@ sub new {
   return $i;
 }
 
+## gets files by futli arrayref, returns number of files attempted to get
 sub get {
   my $i=shift;
-  my $pid=shift // confess "I need an id here.";
+  my $papid=shift // confess "I need an papid here.";
   my $futlis=shift // confess "I need a futli arrayref here.";
   my $count_got=0;
   foreach my $futli (@$futlis) {
-    my $got=$i->get_by_futli($pid,$futli);
+    my $got=$i->get_by_futli($papid,$futli);
     if($i->{'skip_existing'} and $got == -1) {
       ## no more futli for an existing file
       last;
@@ -76,20 +82,33 @@ sub get {
 
 sub get_by_futli {
   my $i=shift;
-  my $pid=shift // confess "I need an id here.";
-  $i->{'pid'}=$pid;
+  my $papid=shift // confess "I need an id here.";
+  $i->{'papid'}=$papid;
   my $futli=shift // confess "I need a futli here.";
   $i->{'futli'}=$futli;
   my $id2file=$i->{'id2file'};
-  my $target_file=$i->{'dir'}->{'warc'}.'/'.&{$id2file}($pid).'.warc';
+  my $target_file=$i->{'dir'}->{'warc'}.'/'.&{$id2file}($papid).'.warc';
   $i->{'target_file'}=$target_file;
   if($i->{'verbose'}) {
     print "My target_file is $target_file\n";
   }
+  ## is there a restriction to skip exisitng WARC files?
   if(-f $target_file and $i->{'skip_existing'}) {
     print "I skip the existing $target_file\n";
     return -1;
   }
+  ## is there a restlction to skip WARCS that already have a PDF?
+  if(-f $target_file and $i->{'skip_pdf'}) {
+    ## check this with a grep, not the finest of hack
+    my $count_pdf=`grep -ci 'Content-Type: application/pdf' $target_file`;
+    chomp $count_pdf;
+    if($count_pdf) {
+      print "I skip $target_file because it has $count_pdf PDF(s).\n";
+      return -1;
+    }
+  }
+  ## find the hostname for the futli. This is important to decide whether to download
+  ## because we don't want to overload hosts
   my $u=URI::URL->new($i->{'futli'});
   $i->{'hostname'}=$u->authority;
   ## pre-download checks
@@ -101,7 +120,7 @@ sub get_by_futli {
   ## for the moment, no check ...
   my $wget_shell=$Lafka::Paths::bins->{'wget'}.' '.$i->{'wget_args'};
   $wget_shell .= " --warc-file " . $i->{'file'}->{'temp_wget'};
-  $wget_shell .= " --warc-header \"Paper-Id: $pid\"";
+  $wget_shell .= " --warc-header \"Paper-Id: $papid\"";
   $wget_shell .= " --warc-header \"Futli: $futli\"";
   ## if this is a html-based (secondary) download
   if($i->{'html'}) {
@@ -134,6 +153,7 @@ sub get_by_futli {
     copy($tmp_file,$target_file);
     return 1;
   }
+  ## read until here while waiting at 79
   if($i->{'m'}->has_first_something_new($tmp_file,$target_file)) {
     if($i->{'verbose'}) {
       print "$tmp_file has something new for $target_file.\n";
@@ -160,9 +180,9 @@ sub should_i_download {
     }
     return 0;
   }
-  ## check if the pid is excluded. The name of the exclusion
+  ## check if the papid is excluded. The name of the exclusion
   ## file is in the Lafka configuration.
-  if($i->{'exclude'}->is_excluded_by_id($i->{'pid'})) {
+  if($i->{'exclude'}->is_excluded_by_id($i->{'papid'})) {
     return 0;
   }
   ## check if we have fullfilled

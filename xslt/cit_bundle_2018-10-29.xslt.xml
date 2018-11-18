@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns="http://www.w3.org/1999/xhtml"
+                exclude-result-prefixes="#default">
+  <xsl:include href="common_bundles.xslt.xml"/>
+  <xsl:include href="intextref.xslt.xml"/>
+  <xsl:variable name="title">
+    <xsl:text>The&#32;</xsl:text>
+    <xsl:value-of select="count(//intextref)"/>
+    <xsl:text>&#32;contexts of the references to&#32;</xsl:text>
+    <xsl:value-of select="$vic_cite"/>
+  </xsl:variable>
+  <xsl:template name="cits_bundles">
+    <h1>
+      <xsl:value-of select="$title"/>
+    </h1>
+    <xsl:text>&#10;</xsl:text>
+    <ul>
+      <xsl:for-each select="/bundle/ref">
+	<li>
+	  <!--	  <xsl:call-template name="link_from_citer">-->
+	  <!--	    <xsl:with-param name="citer"-->
+	  <!--			    select="citer"/>-->
+	  <!--	  </xsl:call-template>-->
+	  <!--	  <br/>-->
+	  <xsl:text>&#10;</xsl:text>
+	  <xsl:call-template name="hyperlink">
+	    <xsl:with-param name="string"
+			    select="./reference/from_pdf"/>
+	  </xsl:call-template>
+	  <br/>
+	  <xsl:text>&#10;</xsl:text>
+	  <xsl:variable name="total"
+			select="count(./intextref)"/>
+	  <xsl:text>Total in-text references:&#32;</xsl:text>
+	  <xsl:value-of select="$total"/>
+	  <xsl:text>&#10;</xsl:text>
+	  <ol>
+	    <xsl:for-each select="./intextref">
+              <li>
+                <xsl:call-template name="show_intextref">
+		  <xsl:with-param name="intext"
+				  select="."/>
+		  <xsl:with-param name="link_exact"
+				  select="'true'"/>
+                </xsl:call-template>
+		<br/>
+                <xsl:text>&#10;</xsl:text>
+              </li>
+            </xsl:for-each>
+	  </ol>
+	</li>
+      </xsl:for-each>
+    </ul>
+  </xsl:template>
+  <xsl:template match="/">
+    <xsl:call-template name="page">
+      <xsl:with-param name="title"
+		      select="$title"/>
+      <xsl:with-param name="body">
+	<xsl:call-template name="cits_bundles"/>
+      </xsl:with-param>
+      <xsl:with-param name="css_data">
+	<xsl:copy-of select="$css"/>
+      </xsl:with-param>
+    </xsl:call-template>
+  </xsl:template>
+</xsl:stylesheet>
