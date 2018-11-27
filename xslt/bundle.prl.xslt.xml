@@ -36,7 +36,7 @@
       </xsl:with-param>
       <!-- prl: -->
       <xsl:with-param name="extra_head">
-        <base href="../" />
+        <!-- base href="../" / -->
 	<script src="js/reftbl.js"></script>
         <script type="text/javascript"> window.onload = function () { ttoggle();}</script>
       </xsl:with-param>
@@ -137,7 +137,15 @@
 	    </a>
 	  </td>
 	  <xsl:text>&#10;</xsl:text>
-	  <td><xsl:value-of select="@adist"/></td>
+	  <td>
+	    <a>
+	      <xsl:attribute name="href">
+		<xsl:value-of select="$dif_url"/>
+		<xsl:value-of select="@bunshid"/>
+	      </xsl:attribute>
+              <xsl:value-of select="@adist"/>
+	    </a>
+          </td>
 	  <td title="distribution">
 	    <a>
 	      <xsl:attribute name="href">
@@ -150,8 +158,8 @@
 	  <td>
 	    <a>
 	      <xsl:attribute name="href">
-		<xsl:value-of select="$phrases_url"/>
-		?phrase=<xsl:value-of select="@bunshid"/>
+		<xsl:value-of select="$fra_url"/>
+		<xsl:value-of select="@bunshid"/>
 	      </xsl:attribute>
 	      <xsl:value-of select="@phrase"/>
 	    </a>
@@ -159,8 +167,8 @@
 	  <td>
 	    <a>
 	      <xsl:attribute name="href">
-		<xsl:value-of select="$phrases_url"/>
-		?topic=<xsl:value-of select="@bunshid"/>
+		<xsl:value-of select="$top_url"/>
+		<xsl:value-of select="@bunshid"/>
 	      </xsl:attribute>
 	      <xsl:value-of select="@topic"/>
 	    </a>

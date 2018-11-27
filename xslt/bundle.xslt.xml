@@ -7,7 +7,7 @@
   <xsl:include href="footer.xslt.xml"/>
 <!--  <xsl:include href="numbers.xslt.xml"/> -->
   <xsl:include href="page.xslt.xml"/>
-  <xsl:include href="stats_css.xslt.xml"/>
+  <xsl:include href="bundles_css.xslt.xml"/>
   <xsl:variable name="date"
 		select="/table/@date"/>
   <xsl:variable name="date_pretty"
@@ -25,6 +25,12 @@
       <xsl:with-param name="css_data">
 	<xsl:copy-of select="$css"/>
       </xsl:with-param>
+      <xsl:with-param name="extra_head">
+	<script src="js/reftbl.js"></script>
+	<script type="text/javascript">
+	  <xsl:text>window.onload = function () { ttoggle();}</xsl:text>
+	</script>
+      </xsl:with-param>
     </xsl:call-template>
   </xsl:template>
   <xsl:template name="bundles">
@@ -32,45 +38,97 @@
       <xsl:value-of select="$title"/>
     </h1>
     <xsl:text>&#10;</xsl:text>
-    <table>
+    <h3>
+      <xsl:text>References with =&gt; </xsl:text>
+      <xsl:choose>
+	<xsl:when test="/bundles/@limit">
+	  <xsl:value-of select="/bundles/@limit"/>
+	</xsl:when>
+	<xsl:otherwise>
+	  <xsl:text>10</xsl:text>
+	</xsl:otherwise>
+      </xsl:choose>
+      <xsl:text>&#32;citations in total:&#32;</xsl:text>
+      <xsl:value-of select="count(//bundle)"/>
+    </h3>
+    <h4>
+      <xsl:text>Explanatory table [</xsl:text>
+      <a class="u" href="#" id="explnk" onclick="return toggle_exp(this)">
+	<xsl:text>show</xsl:text>
+      </a>
+      <xsl:text>]</xsl:text>
+    </h4>
+    <table id="explain" style="display:none; margin-bottom: 20px;">
+      <tr>
+	<td>
+	  <xsl:text>[1]</xsl:text>
+	</td>
+	<td>
+	  <xsl:text>metadata records available</xsl:text>
+	</td>
+      </tr>
+    </table>
+    <table id="main_tbl">
       <tr>
 	<th>
 	  <xsl:text>Unique references</xsl:text>
 	</th>
-	<th align="right" style="align: right">
-	  <xsl:text>pubs</xsl:text>
+	<th>
+	  <a href="#" onclick="return sort_table(1)">
+	    <xsl:text>pubs</xsl:text>
+	  </a>
 	</th>
-	<th align="right" style="align: right">
-	  <xsl:text>cits</xsl:text>
+	<th>
+	  <a href="#" onclick="return sort_table(2)">
+	    <xsl:text>cits</xsl:text>
+	  </a>
 	</th>
-	<th align="right" style="align: right">
-	  <xsl:text>with</xsl:text>
+	<th>
+	  <a href="#" onclick="return sort_table(3)">
+	    <xsl:text>with</xsl:text>
+	  </a>
 	</th>
-	<th align="right" style="align: right">
+	<th>
+	  <a href="#" onclick="return sort_table(4)">
+	    <xsl:text>dif</xsl:text>
+	  </a>
+	</th>
+	<th>
 	  <xsl:text>distribution</xsl:text>
+	</th>
+	<th>
+	  <xsl:text>common phrases</xsl:text>
+	</th>
+	<th>
+	  <xsl:text>topic models</xsl:text>
 	</th>
       </tr>
       <xsl:for-each select="/bundles/bundle">
 	<xsl:sort select="@npub" data-type="number" order="descending"/>
         <xsl:text>&#10;</xsl:text>
 	<tr>
+	  <xsl:if test="position() mod 2">
+	    <xsl:attribute name="class">
+	      <xsl:text>even</xsl:text>
+	    </xsl:attribute>
+	  </xsl:if>
 	  <xsl:text>&#10;</xsl:text>
 	  <td align="left"
 	      style="align: left">
 	    <xsl:value-of select="@author"/>
 	    <xsl:text>&#32;(</xsl:text>
-	      <xsl:value-of select="@year"/>
-	      <xsl:text>)&#32;</xsl:text>
-	      <xsl:value-of select="@title"/>
-	      <xsl:text>&#32;</xsl:text>
-	      <a>
-		<xsl:attribute name="href">
-		  <xsl:text>xml/</xsl:text>
-		  <xsl:value-of select="@bunshid"/>
-		  <xsl:text>.xml</xsl:text>
-		</xsl:attribute>
-		<xsl:text>(raw data)</xsl:text>
-	      </a>
+	    <xsl:value-of select="@year"/>
+	    <xsl:text>)&#32;</xsl:text>
+	    <xsl:value-of select="@title"/>
+	    <xsl:text>&#32;</xsl:text>
+	    <a>
+	      <xsl:attribute name="href">
+		<xsl:text>xml/</xsl:text>
+		<xsl:value-of select="@bunshid"/>
+		<xsl:text>.xml</xsl:text>
+	      </xsl:attribute>
+	      <xsl:text>(raw data)</xsl:text>
+	    </a>
 	  </td>
           <xsl:text>&#10;</xsl:text>
 	  <td align="right"
@@ -113,6 +171,18 @@
 	  </td>
 	  <xsl:text>&#10;</xsl:text>
 	  <td align="right"
+	      title="with"
+	      style="align: right">
+	    <a>
+	      <xsl:attribute name="href">
+		<xsl:value-of select="$dif_url"/>
+		<xsl:value-of select="@bunshid"/>
+	      </xsl:attribute>
+	      <xsl:value-of select="@adist"/>
+	    </a>
+	  </td>
+	  <xsl:text>&#10;</xsl:text>
+	  <td align="right"
 	      title="distribution"
 	      style="align: right">
 	    <a>
@@ -121,6 +191,30 @@
 		<xsl:value-of select="@bunshid"/>
 	      </xsl:attribute>
 	      <xsl:value-of select="@ndis"/>
+	    </a>
+	  </td>
+	  <xsl:text>&#10;</xsl:text>
+	  <td align="right"
+	      title="phrases"
+	      style="align: right">
+	    <a>
+	      <xsl:attribute name="href">
+		<xsl:value-of select="$fra_url"/>
+		<xsl:value-of select="@bunshid"/>
+	      </xsl:attribute>
+	      <xsl:value-of select="@phrase"/>
+	    </a>
+	  </td>
+	  <xsl:text>&#10;</xsl:text>
+	  <td align="right"
+	      title="distribution"
+	      style="align: right">
+	    <a>
+	      <xsl:attribute name="href">
+		<xsl:value-of select="$top_url"/>
+		<xsl:value-of select="@bunshid"/>
+	      </xsl:attribute>
+	      <xsl:value-of select="@topic"/>
 	    </a>
 	  </td>
 	  <xsl:text>&#10;</xsl:text>

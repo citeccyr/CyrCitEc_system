@@ -11,6 +11,9 @@ This will list what is actually being performed.
 * ~/perl/spz_to_lafka produces warc files with saved payloads from futlis.
   It takes a number of downloads to perform as an argument.
 
+*  ~/perl/save_stats -i
+  saves the atats part of the web site every day
+
 The following are performed in ~/bin/daily_update
 
 * ~/perl/deal_with_warcs_peren produces pdf files into the peren

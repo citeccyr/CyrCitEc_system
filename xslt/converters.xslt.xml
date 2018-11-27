@@ -17,10 +17,22 @@
     <xsl:value-of select="$self"/>
     <xsl:text>/analysis/spadist/cgi/spadist4bundle.cgi?code=</xsl:text>
   </xsl:variable>
-  <xsl:variable name="phrases_url">
+  <xsl:variable name="fra_url">
     <xsl:value-of select="$self"/>
-    <xsl:text>/analysis/spadist/cgi/phrases.cgi</xsl:text>
+    <xsl:text>/analysis/spadist/cgi/phrases.cgi?phrase=</xsl:text>
   </xsl:variable>
+  <xsl:variable name="top_url">
+    <xsl:value-of select="$self"/>
+    <xsl:text>/analysis/spadist/cgi/phrases.cgi?topic=</xsl:text>
+  </xsl:variable>
+  <xsl:variable name="dif_url">
+    <xsl:value-of select="$self"/>
+    <xsl:text>/analysis/spadist/cgi/dif.cgi?code=</xsl:text>
+  </xsl:variable>
+<!--  <xsl:variable name="phrases_url"> -->
+<!--    <xsl:value-of select="$self"/> -->
+<!--    <xsl:text>/analysis/spadist/cgi/phrases.cgi</xsl:text> -->
+<!--  </xsl:variable> -->
   <xsl:variable name="project"
 		select="'Cirtec'"/>
   <xsl:variable name="checker">

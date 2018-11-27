@@ -250,6 +250,7 @@ sub add_prl {
     if(-d $file) {
       next;
     }
+    print "I add $file\n";
     $to_repo->{$file}=1;
   }
 }

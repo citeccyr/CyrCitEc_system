@@ -8,7 +8,7 @@
   <xsl:include href="footer.xslt.xml"/>
 <!--  <xsl:include href="numbers.xslt.xml"/> -->
   <xsl:include href="page.xslt.xml"/>
-  <xsl:include href="stats_css.xslt.xml"/>
+  <xsl:include href="bundles_css.xslt.xml"/>
   <xsl:variable name="date"
 		select="/table/@date"/>
   <xsl:variable name="date_pretty"

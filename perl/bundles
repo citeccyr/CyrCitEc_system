@@ -16,6 +16,7 @@ use List::Util qw(shuffle);
 use Storable;
 use XML::LibXML;
 use URI::Escape;
+use JSON::XS;
 
 use Cidig::Ris;
 use Cec::Bundles;
@@ -613,10 +614,44 @@ sub html {
   }
 }
 
+sub get_phase {
+  my ($id, $jdata) = @_;
+  my $w = 'none';
+  if($jdata->{$id}) {
+    my @phs = @{$jdata->{$id}->{'2norm'}};
+    #my @ors = @{$jdata->{$id}->{'3orig'}};
+    if(@phs) {
+      $w = $phs[0]->{'w'}.' ('.$phs[0]->{'n'}.'/'.$phs[0]->{'t'}.')'; #.@phs.'-'.@ors;
+    }
+  }
+  return $w;
+}
+
+sub get_topic {
+  my ($id, $jdata) = @_;
+  my $w = 'none';
+  if($jdata->{$id}) {
+    my @phs = @{$jdata->{$id}->[0]};
+    if(@phs) {
+      $w = $phs[0]->{'topic'};
+    }
+  }
+  return $w;
+}
+
+sub get_adist {
+  my ($id, $jdata) = @_;
+  if($jdata->{$id}) {
+      my $float = $jdata->{$id}->{'average_cosine_distance_use_tfidf'} * 1000;
+      return int($float + $float/abs($float*2 || 1));
+  }
+}
+
 
 sub build_index {
   my $doc=XML::LibXML::Document->new('1.0','UTF-8');
   my $bundles_ele=$doc->createElement('bundles');
+  $bundles_ele->setAttribute('limit',$o{'m'});
   my @in_files=glob($dirs->{'bundles_xml'}."/*.xml");
   if($o{'p'}) {
     @in_files=glob($dirs->{'analysis_xml'}."/*.xml");
@@ -624,6 +659,13 @@ sub build_index {
   ## spadis summary
   my $dissum=&Cec::Store::load($files->{'dis_summary'})
     // confess "I don't see the spadis summary.";
+  my $json = &File::Slurper::read_text($dirs->{'www_w2v'}.'/2-3-4-5-6_grams_v3.json');
+  my $jdata = decode_json($json);
+  my $json_t = &File::Slurper::read_text($dirs->{'www_w2v'}.'/topic_output.json');
+  my $jdata_t = JSON::XS->new->decode ($json_t); # = decode_json($json_t);
+  my $json_i = &File::Slurper::read_text($dirs->{'www_w2v'}.'/average_cosine_distance.json');
+  $json_i =~ s/ NaN/0.999/mgi;
+  my $jdata_i = JSON::XS->new->decode($json_i);
   foreach my $in_file (shuffle @in_files) {
     my $bana=basename($in_file);
     #print "I index $bana\n";
@@ -675,6 +717,27 @@ sub build_index {
     my $ndis=$dissum->{$bunshid} // '';
     if($ndis) {
       $bundle_ele->setAttribute('ndis',$ndis);
+    }
+    my $phase=&get_phase($bunshid,$jdata);
+    if($phase) {
+      $bundle_ele->setAttribute('phrase',get_phase($bunshid,$jdata));
+    }
+    else {
+      print "I have no phase for $bunshid\n";
+    }
+    my $topic=&get_topic($bunshid,$jdata_t);
+    if($topic) {
+      $bundle_ele->setAttribute('topic',get_topic($bunshid,$jdata_t));
+    }
+    else {
+      print "I have no topic for $bunshid\n";
+    }
+    my $adist=&get_adist($bunshid,$jdata_i);
+    if($adist) {
+      $bundle_ele->setAttribute('adist',get_adist($bunshid,$jdata_i));
+    }
+    else {
+      print "I have no adist for $bunshid\n";
     }
     if($i_add) {
       #$bundles_ele->appendText("\n");

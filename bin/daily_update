@@ -25,11 +25,15 @@ find ~/opt/peren -type d -empty -delete
 
 ## index
 #rm ~/opt/refidx/* ; ~/perl/refidx.pl -r ~/opt/peren/ -i summary.xml  -b ~/opt/refidx/ something > $LOG/refidx.log
-~/perl/refidx.pl -r ~/opt/peren/ -i summary.xml  -b ~/opt/refidx > $LOG/refidx.log
+rm ~/opt/refidx/r_* ; ~/perl/refidx.pl -r ~/opt/peren/ -i summary.xml  -b ~/opt/refidx > $LOG/refidx.log
 ~/perl/bundles > $LOG/bundles.log
 
 ## the basic stem file
 ~/perl/stem_fixes > $LOG/stem_fixes.log 2> $LOG/stem_fixes.err
+
+## this script stores its output in the current directp
+##cd ~/public_html/opt/bundles/Word2Vec/ ; /home/prl/BK/citcon4bundles.pl > $LOG/citcon4bundles.log 2> $LOG/citcon4bundles.err ; cd
+
 
 ## produce model files
 #~/perl/model_w2v fixes_archive_only > $LOG/fixes_archive_only.log 2> $LOG/fixes_archive_only.err
