@@ -1,0 +1,25 @@
+
+  <b><a href="https://socionet.ru/publication.xml?h=[% handle %]">[% hdata.authors %] [% IF hdata.year %]([% hdata.year %])[% END %] [% hdata.title %]</a></b><br/>
+  <div class="intm">Spatial distribution: [% hdata.intextsummary %]</div>
+  <ul>
+    
+    [% FOREACH intxt IN hdata.intextref %]
+	    [% IF intxt.0 %]
+		<li style="padding: 5px 0;"><b>Fragment #[% loop.count %]</b>
+		<ul>
+		[% FOREACH inner IN intxt %]
+		    <li>
+		    <div class="intm">start: [% inner.Start.0 %]; end: [% inner.End.0 %]</div>
+		    <div class="intm">Prefix: [% inner.Prefix.0 %]</div>
+		    <div class="intm">Exact: [% inner.Exact.0 %]</div>
+		    <div class="intm">Suffix: [% inner.Suffix.0 %]</div>
+	    
+		    <!-- Dumper.dump(inner) -->
+		    </li>
+		[% END %]
+		</ul>
+		</li>
+	    [% END %]
+	
+    [% END %]
+  </ul>

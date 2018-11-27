@@ -1,0 +1,116 @@
+<html>
+<head>
+ <title>Common phrases from the citation contexts</title>
+
+  <link rel="stylesheet" type="text/css" href="/analysis/css/ext-all.css" /> 
+  <script type="text/javascript" src="/analysis/js/ext-base.js"></script>  
+  <script type="text/javascript" src="/analysis/js/ext-all.js"></script>  
+  <script type="text/javascript" src="/analysis/js/jquery-1.7.0.min.js"></script>  
+
+ <style>
+  .intm { padding: 8px 0; }
+  .ontbl td { padding: 10px 6px; vertical-align: top; }
+  h1 { padding: 20px; font-size: 25px; }
+  body { padding: 15px; }
+ </style>
+
+
+</head>
+<body>
+
+
+    <div id="addparam-dlg" style="visibility:hidden;position:absolute;top:0;">
+        <div class="x-dlg-hd">Phrases </div>
+        <div class="x-dlg-bd hdtbl addp">
+          <!-- div class="x-dlg-tab" style="padding: 10px 0;" title=""></div-->
+        </div>
+    </div>
+
+[% USE Dumper %]
+
+<h1>Common phrases from the citation contexts</h1>
+<!--  Dumper.dump(data)  -->
+
+[% SET max = orig.size > norm.size ? orig.size : norm.size %]
+[% SET max = 5 %]
+
+<script>
+var apdlg;
+function showref(myid, code, w) {
+
+    if (!apdlg) {
+            apdlg = new Ext.BasicDialog("addparam-dlg", {
+                modal: true,
+                autoTabs: true,
+                width: 720,
+                height: 450,
+                shadow: true,
+                minWidth: 300,
+                minHeight: 420,
+                proxyDrag: true
+            });
+            apdlg.addKeyListener(27, function() { apdlg.hide(); }, apdlg);
+            apdlg.addButton('Close', function() { apdlg.hide(); }, apdlg);
+    }
+    apdlg.show(myid);
+
+    \$('#addparam-dlg .x-tabs-body').html("<div style='text-align:center'><img src='/analysis/images/wait.gif' style='margin-top: 100px;' class='loading'></div>");
+   \$.get('http://cirtec.ranepa.ru/analysis/spadist/cgi/phrases.cgi?phrase='+code+'&w=' + w, function(data) {
+      \$('#addparam-dlg .x-tabs-body').html(data);
+   })
+
+  
+  return false;
+}
+
+</script>
+
+
+<table class="ontbl">
+ <tr>
+  <th>#</th>
+  <th>Original contexts</th>
+  <th>Normalised contexts</th>
+ </tr>
+[% SET i=0 %]
+[% WHILE i < max %]
+  <!-- IF orig.$i || norm.$i -->
+  [% SET cur=i+2 %]
+  <tr>
+   <td>[% 2+i %]</td>
+   <td>
+
+     [% SET y="${cur}orig" %]
+     [% IF data.item(y).size > 0 %]
+          [% SET arr=data.item(y) %]
+          [% SET j=0 %][% WHILE j < arr.size %]
+            [% IF arr.$j.w %] 
+               [% arr.$j.w %] (<a href="#" id="a[% 100*i + j %]" onclick="return showref(this.id, '[% code %]', '[% arr.$j.w %]')">[% arr.$j.n %]</a>/[% arr.$j.t %])<br/>
+            [% END %]
+            [% j = j+1 %]
+          [% END %]
+     [% END %]
+
+   </td>
+   <td>
+     [% SET y="${cur}norm" %]
+     [% IF data.item(y).size > 0 %]
+          [% SET arr=data.item(y) %]
+          [% SET j=0 %][% WHILE j < arr.size %]
+            [% IF arr.$j.w %] 
+               [% arr.$j.w %] ([% arr.$j.n %]/[% arr.$j.t %])<br/>
+            [% END %]
+            [% j = j+1 %]
+          [% END %]
+     [% END %]
+
+   </td>
+  </tr>
+  <!-- END -->
+   [% i = i+1 %]
+[% END %]
+</table>
+
+
+</body>
+</html>

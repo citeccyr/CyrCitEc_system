@@ -1,0 +1,103 @@
+<html>
+<head>
+ <title>Topic models for the reference [% title %] </title>
+ <style>
+  .intm { padding: 8px 0; }
+  .ontbl td { padding: 1px 0 18px 0; }
+  .rline { padding: 0 0 9px 0; }
+  .ontbl tr td:nth-child(1) { padding: 0 10px; }
+ </style>
+</head>
+<body>
+
+[% USE Dumper %]
+[% SET max = data.size %]
+
+<h1>Topic models for the reference [% title %]</h1>
+<!-- [% Dumper.dump(_data) %] -->
+
+Total topics: [% max %]
+
+<h3>Frequency/importance of topic's words</h3>
+<table style="width: 400px">
+ <tr><th>topic's word</th><th>freq</th><th>tf_idf</th></tr>
+[% FOREACH itm IN freqs %]
+   <tr><td>[% itm.name %]</td><td style="text-align: center">[% itm.freq %]</td><td style="text-align: center">[% itm.tf_idf %]</td></tr>
+[% END %]
+</table>
+
+<h3>Topics by citation contexts</h3>
+
+
+
+<table class="ontbl">
+ <tr>
+  <th></th>
+ </tr>
+[% SET i=0 %]
+[% SET pref_handle = '' %]
+[% WHILE i < max %]
+  <tr>
+   <td style='vertical-align: top'>[% 1+i %]</td>
+   <td>
+    <div class='rline'>
+    [% IF data.$i.handle != pref_handle %]
+      [% IF data.$i.title %]
+         <b>Citing paper:</b> [% data.$i.author %] ([% data.$i.year %]) [% data.$i.title %]  <!-- ref_key: [% data.$i.ref_key %] : [% pref_ref %] -->
+      [% ELSE %]
+         ref_key: [% data.$i.ref_key %]
+      [% END %]
+      </div>
+    [% END %]
+     <div class='rline'>
+       <b>topic:</b> [% data.$i.topic %]<br/>
+       <b>probability:</b> [% data.$i.probability %]
+     </div>
+     <div class='rline'><b>Prefix:</b> [% data.$i.Prefix %]</div>
+     <b>Suffix:</b> [% data.$i.Suffix %]
+   </td>
+  </tr>
+   [% SET pref_handle = data.$i.handle %]
+   [% i = i+1 %]
+[% END %]
+</table>
+
+
+<br/><h3>Contexts without topics</h3>
+<table class="ontbl">
+ <tr>
+  <th></th>
+ </tr>
+[% SET max = noref.size %]
+[% SET data = noref %]
+[% SET i=0 %]
+[% SET pref_handle = '' %]
+[% WHILE i < max %]
+  <tr>
+   <td style='vertical-align: top'>[% 1+i %]</td>
+   <td>
+<!-- [% data.$i.handle %] -->
+    <div class='rline'>
+    [% IF data.$i.handle != pref_handle %]
+      [% IF data.$i.title %]
+         <b>Citing paper:</b> [% data.$i.author %] ([% data.$i.year %]) [% data.$i.title %]  <!-- ref_key: [% data.$i.ref_key %] : [% pref_ref %] -->
+      [% ELSE %]
+         <b>ref_key:</b> [% data.$i.ref_key %]
+      [% END %]
+      </div>
+    [% END %]
+     <div class='rline'><b>Prefix:</b> [% data.$i.Prefix %]</div>
+     <b>Suffix:</b> [% data.$i.Suffix %]
+   </td>
+  </tr>
+   [% SET pref_handle = data.$i.handle %]
+   [% i = i+1 %]
+[% END %]
+</table>
+
+
+
+
+
+</body>
+</html>

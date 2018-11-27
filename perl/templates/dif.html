@@ -1,0 +1,96 @@
+<html>
+<head>
+ <title>Clusters of contexts for the reference "[% title %]" </title>
+ <style>
+  .clst { padding: 0 0 20px 0; }
+  dl { padding: 0 0 0 20px; }
+  li { dfont-size: 14px; margin: 20px 0 10px 10px;}
+  h3 { margin: 20px 0 10px 10px; font-size: 14px; }
+  dl dl b { background-color: yellow; }
+
+
+  .intm { padding: 8px 0; }
+  .ontbl td { padding: 1px 0 18px 0; }
+  .rline { padding: 0 0 9px 0; }
+  .ontbl tr td:nth-child(1) { padding: 0 10px; }
+ </style>
+</head>
+<body>
+
+[% USE Dumper %]
+
+<h1>Clusters of contexts for the reference "[% title %]"</h1>
+<!-- [% Dumper.dump(_data) %] -->
+
+<h3>Average distance for all contexts: [% avg %]</h3>
+
+[% USE Math %]
+[% SET _clusters = data.internal_clusters %]
+[% SET max = clusters.size %]
+[% SET i=0 %]
+
+<table>
+<tr><th>Cluster #</th><th>cluster's size</th><th>average distance</th></tr>
+[% WHILE i <= max && i > -1 %]
+   [% IF i+1 > max %][% SET i = -1 %][% END %]
+   [% IF clusters.$i %]
+     <tr><td align="center">[% IF i>-1 %][% i+1 %][% ELSE %]-1[% END %]</td>
+         <td align="center">[% clusters.$i.size %]</td>
+         <td align="center">[% Math.int(1000*clusters.$i.average_to_clustroid + 1000*clusters.$i.average_to_clustroid / Math.abs(2000*clusters.$i.average_to_clustroid || 1) ) %]</td></tr>
+   [% END %]
+   [% IF i > -1 %][% SET i = i+1 %][% END %]
+[% END %]
+</table>
+
+
+
+[% SET i=0 %]
+[% WHILE i < max+1 && i > -1 %]<!-- -->
+     [% IF i >= max %][% SET i = -1 %][% END %]
+
+   [% IF clusters.$i %]
+
+     <div class="clst">
+     <h4>[% IF i > -1 %]
+         Cluster of contexts #[% 1+i %]
+         [% ELSE %]
+         Unclustered contexts
+         [% END %]
+     </h4>
+     <div>Number of contexts: [% clusters.$i.size %]</div>
+     <div>Average distance from the cluster center: [% Math.int(1000*clusters.$i.average_to_clustroid + 1000*clusters.$i.average_to_clustroid / Math.abs(2000*clusters.$i.average_to_clustroid || 1) ) %]</div>
+
+   <!-- INCLUDE 'phrases_ref.html' data=clusters.$i.lines_ref -->
+
+    <ol>
+    [% SET maxj = clusters.$i.lines_ref.size %]
+    [% SET j=0 %]
+    [% WHILE j < maxj %]<!-- -->
+
+      <li>
+    [% IF clusters.$i.lines_ref.$j.citer.title.0 %]<h3>[% clusters.$i.lines_ref.$j.citer.author.0 %] [% IF clusters.$i.lines_ref.$j.citer.year.0 %]([% clusters.$i.lines_ref.$j.citer.year.0 %])[% END %] [% clusters.$i.lines_ref.$j.citer.title.0 %]&nbsp;</h3>[% END %]
+[% fdclusters.$i.lines_ref.$j.citer.title.0 %]
+    In-text reference with the coordinate start=[% clusters.$i.lines_ref.$j.intextref.Start.0 %]
+       <dl><b>Prefix</b>
+         <dl>[% clusters.$i.lines_ref.$j.intextref.Prefix.0 %]</dl>
+       </dl>
+       <dl><b>Exact</b>
+          <dl>[% clusters.$i.lines_ref.$j.intextref.Exact.0 %]</dl>
+       </dl>
+       <dl><b>Suffix</b>
+         <dl>[% clusters.$i.lines_ref.$j.intextref.Suffix.0 %]</dl>
+       </dl>
+      </li>
+
+     [% j = j+1 %]
+   [% END %]
+   </ol>
+
+     </div>
+   [% END %]
+   [% IF i != -1 %][% i = i+1 %][% END %]
+[% END %]
+
+
+</body>
+</html>

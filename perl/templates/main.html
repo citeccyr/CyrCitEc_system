@@ -1,0 +1,31 @@
+<html>
+<head>
+ <title></title>
+ <style>
+  .intm { padding: 8px 0; }
+ </style>
+</head>
+<body>
+
+[% USE Dumper %]
+[% SET data = root.${root.keys.0} #take first element %]
+
+<h1>Spatial distribution of the in-text citations for the reference</h1>
+<h2>[% data.author %] [% IF data.year %]([% data.year %])[% END %] [% data.title %]</h2>
+
+<p>Total in-text citations [% data.intextcount %] in [% data.paperscount %] papers</p>
+<p>Total spatial distribution: [% data.intextsummary %]</p>
+
+<ol>
+[% FOREACH handle IN data.pubs.keys %]
+  
+  [% SET hdata = data.pubs.${handle} %]
+  <li>[% INCLUDE item.html %]</li>
+
+[% END %]
+</ol>
+
+
+
+</body>
+</html>

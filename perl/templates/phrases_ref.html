@@ -1,0 +1,37 @@
+
+[% SET max = data.size %]
+
+<style>
+  dl { padding: 0 0 0 20px; }
+  li { font-size: 12px; margin: 0 0 10px 10px;}
+  h3 { margin: 20px 0 10px 10px; font-size: 14px; }
+  dl dl b { background-color: yellow; }
+</style>
+<ul>
+[% SET i=0 %]
+[% WHILE i < max %]
+
+  <li>
+   
+    [% IF data.$i.title %]<h3>[% data.$i.author %] [% IF data.$i.year %]([% data.$i.year %])[% END %] [% data.$i.title %]&nbsp;</h3>[% END %]
+    
+     <ol>
+      <li>In-text reference with the coordinate start=[% data.$i.Start %]
+       <dl><b>Prefix</b>
+	 <dl>[% data.$i.Prefix %]</dl>
+       </dl>
+       <dl><b>Exact</b>
+          <dl>[% data.$i.Exact %]</dl>
+       </dl>
+       <dl><b>Suffix</b>
+         <dl>[% data.$i.Suffix %]</dl>
+       </dl>
+      </li>
+     </ol>
+    
+   
+   [% i = i+1 %]
+[% END %]
+</ul>
+
+
