@@ -39,11 +39,15 @@ The following are performed in ~/bin/daily_update
 
 The following repositories contain work that was written as part of Cirtec.
 
-* The PDF stream CLI https://github.com/citeccyr/pdf-stream-cli
+* [PDF stream CLI](https://github.com/citeccyr/pdf-stream-cli)
 
-* Topic modeling for the analysis https://github.com/bakarov/cirtec
+* [Topic modeling for the analysis](https://github.com/bakarov/cirtec)
 
-* N-grams and Clustering https://github.com/bakarov/cirtec
+* [N-grams and Clustering](https://github.com/bakarov/cirtec)
+
+## ["Cirtec Outputs"](http://cirtec.ranepa.ru/)
+
+The Cirtec project is funded by [RANEPA](https://www.ranepa.ru/eng/).
 
 
 ----------------------------------------------------------------

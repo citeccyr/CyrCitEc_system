@@ -39,6 +39,11 @@ $to_repo->{"$bin_dir/pdf-stream-cli"}=1;
 my $to_parse=&look_for($crontab_file,'bin');
 $to_parse=&look_for($crontab_file,'perl',$to_parse);
 
+## copy docm
+my $read_me='README.md';
+my $s="rsync -qa ~/doc/$read_me ".$dirs->{'doc_git'}."/$read_me";
+system($s);
+
 ## get perl calls from files in bin
 foreach my $file (keys %{$to_parse->{'bin'}}) {
   $to_parse=&look_for($file,'perl',$to_parse);

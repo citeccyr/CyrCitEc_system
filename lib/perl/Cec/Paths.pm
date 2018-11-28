@@ -38,6 +38,7 @@ $dirs->{'test'}=$dirs->{'work'}.'/test';
 $dirs->{'refix'}=$dirs->{'home'}.'/opt/refidx';
 $dirs->{'train'}=$dirs->{'work'}.'/train';
 $dirs->{'git'}=$dirs->{'opt'}.'/git';
+$dirs->{'doc_git'}=$dirs->{'git'}.'/CyrCitEc_system';
 $dirs->{'rep'}=$dirs->{'home'}.'/git';
 $dirs->{'doc'}=$dirs->{'home'}.'/doc';
 $dirs->{'index'}=$dirs->{'opt'}.'/index';
