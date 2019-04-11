@@ -1,108 +1,153 @@
 #!/bin/sh
 
-rsync -qa --delete rsync://1.old.socionet.ru/cyrcitec/recitex.pl ~/perl/recitex.pl
-sleep 10
-rsync -qa --delete rsync://1.old.socionet.ru/cyrcitec/refidx.pl ~/perl/refidx.vic.pl
+rsync -qa rsync://1.old.socionet.ru/cyrcitec/groups/ ~/var/opt/groups
 sleep 10
 
-rsync -qa --delete rsync://1.old.socionet.ru/cyrcitec/public_html/newphase.cgi ~/perl/newphase.vic.cgi
+rsync -qa rsync://1.old.socionet.ru/rsync/rsyncd.conf ~/var/opt/rsyncd.conf
 sleep 10
 
-rsync -qa --delete rsync://1.old.socionet.ru/cyrcitec/handle.dump ~/opt/cyrcitec/handle.dump
+## --delete rsync://1.old.socionet.ru/cyrcitec/recitex.pl ~/perl/recitex.pl
+rsync -qa rsync://1.old.socionet.ru/cyrcitec/recitex.pl ~/perl/recitex.pl
+
+## --delete rsync://1.old.socionet.ru/cyrcitec/refidx.pl ~/perl/refidx.vic.plsleep 10
+rsync -qa rsync://1.old.socionet.ru/cyrcitec/refidx.pl ~/perl/refidx.vic.pl
 sleep 10
-rsync -qa --delete rsync://1.old.socionet.ru/cyrcitec/SPH.in ~/opt/cyrcitec/SPH.in
 
-rsync -aq --delete rsync://1.old.socionet.ru/spz/rus/isyigw/ ~/var/opt/input/rus/isyigw
+## --delete rsync://1.old.socionet.ru/cyrcitec/public_html/newphase.cgi ~/perl/newphase.vic.cgi
+rsync -qa rsync://1.old.socionet.ru/cyrcitec/public_html/newphase.cgi ~/perl/newphase.vic.cgi
+sleep 10
+
+## --delete rsync://1.old.socionet.ru/cyrcitec/handle.dump ~/opt/cyrcitec/handle.dump
+rsync -qa rsync://1.old.socionet.ru/cyrcitec/handle.dump ~/opt/cyrcitec/handle.dump
+
+## --delete rsync://1.old.socionet.ru/cyrcitec/SPH.in ~/opt/cyrcitec/SPH.insleep 10
+rsync -qa rsync://1.old.socionet.ru/cyrcitec/SPH.in ~/opt/cyrcitec/SPH.in
+
+## --delete rsync://1.old.socionet.ru/spz/rus/isyigw/ ~/var/opt/input/rus/isyigw
+rsync -aq rsync://1.old.socionet.ru/spz/rus/isyigw/ ~/var/opt/input/rus/isyigw
 sleep 10
 
 
-rsync -aq --delete rsync://1.old.socionet.ru/spz/rus/ipmpnt/ /home/cec/var/opt/input/rus/ipmpnt/
+## --delete rsync://1.old.socionet.ru/spz/rus/ipmpnt/ ~/var/opt/input/rus/ipmpnt/
+rsync -aq rsync://1.old.socionet.ru/spz/rus/ipmpnt/ ~/var/opt/input/rus/ipmpnt/
 
-# rsync -aq --delete rsync://1.old.socionet.ru/repec/rus/ipmpnt/ ~/var/opt/input/rus/ipmpnt
-sleep 10
-rsync -aq --delete rsync://1.old.socionet.ru/spz/rus/pgfhxz/ ~/var/opt/input/rus/pgfhxz
- sleep 10
- rsync -aq --delete rsync://1.old.socionet.ru/spz/rus/vgmu00/ ~/var/opt/input/rus/vgmu00
- sleep 10
- rsync -aq --delete rsync://1.old.socionet.ru/spz/rus/mqijxk/ ~/var/opt/input/rus/mqijxk
- sleep 10
- rsync -aq --delete rsync://1.old.socionet.ru/iplus/ ~/var/opt/input/iplus
- sleep 10
- rsync -aq --delete rsync://1.old.socionet.ru/visnyk/ ~/var/opt/input/visnyk
- sleep 10
- rsync -aq --delete rsync://1.old.socionet.ru/polessu/ ~/var/opt/input/polessu
- sleep 10
- rsync -aq --delete rsync://1.old.socionet.ru/ztu/ ~/var/opt/input/ztu
+## --delete rsync://1.old.socionet.ru/repec/rus/ipmpnt/ ~/var/opt/input/rus/ipmpnt
+# rsync -aq rsync://1.old.socionet.ru/repec/rus/ipmpnt/ ~/var/opt/input/rus/ipmpnt
 
- # echo ~/var/opt/input/bkr/
- rsync -qa --delete rsync://1.old.socionet.ru/bkr/ ~/var/opt/input/bkr/
+## --delete rsync://1.old.socionet.ru/spz/rus/pgfhxz/ ~/var/opt/input/rus/pgfhxzsleep 10
+rsync -aq rsync://1.old.socionet.ru/spz/rus/pgfhxz/ ~/var/opt/input/rus/pgfhxz
+
+## --delete rsync://1.old.socionet.ru/spz/rus/vgmu00/ ~/var/opt/input/rus/vgmu00sleep 10
+ rsync -aq rsync://1.old.socionet.ru/spz/rus/vgmu00/ ~/var/opt/input/rus/vgmu00
+
+ ## --delete rsync://1.old.socionet.ru/spz/rus/mqijxk/ ~/var/opt/input/rus/mqijxksleep 10
+ rsync -aq rsync://1.old.socionet.ru/spz/rus/mqijxk/ ~/var/opt/input/rus/mqijxk
+
+ ## --delete rsync://1.old.socionet.ru/iplus/ ~/var/opt/input/iplussleep 10
+ rsync -aq rsync://1.old.socionet.ru/iplus/ ~/var/opt/input/iplus
+
+ ## --delete rsync://1.old.socionet.ru/visnyk/ ~/var/opt/input/visnyksleep 10
+ rsync -aq rsync://1.old.socionet.ru/visnyk/ ~/var/opt/input/visnyk
+
+ ## --delete rsync://1.old.socionet.ru/polessu/ ~/var/opt/input/polessusleep 10
+ rsync -aq rsync://1.old.socionet.ru/polessu/ ~/var/opt/input/polessu
+
+ ## --delete rsync://1.old.socionet.ru/ztu/ ~/var/opt/input/ztusleep 10
+ rsync -aq rsync://1.old.socionet.ru/ztu/ ~/var/opt/input/ztu
+
+
+ ## --delete rsync://1.old.socionet.ru/bkr/ ~/var/opt/input/bkr/# echo ~/var/opt/input/bkr/
+ rsync -qa rsync://1.old.socionet.ru/bkr/ ~/var/opt/input/bkr/
  sleep 001
- # echo ~/var/opt/input/cas/
- rsync -qa --delete rsync://1.old.socionet.ru/cas/ ~/var/opt/input/cas/
+
+ ## --delete rsync://1.old.socionet.ru/cas/ ~/var/opt/input/cas/# echo ~/var/opt/input/cas/
+ rsync -qa rsync://1.old.socionet.ru/cas/ ~/var/opt/input/cas/
  sleep 001
- # echo ~/var/opt/input/cfr/
- rsync -qa --delete rsync://1.old.socionet.ru/cfr/ ~/var/opt/input/cfr/
+
+ ## --delete rsync://1.old.socionet.ru/cfr/ ~/var/opt/input/cfr/# echo ~/var/opt/input/cfr/
+ rsync -qa rsync://1.old.socionet.ru/cfr/ ~/var/opt/input/cfr/
  sleep 001
- # echo ~/var/opt/input/eer/
- rsync -qa --delete rsync://1.old.socionet.ru/eer/ ~/var/opt/input/eer/
+
+ ## --delete rsync://1.old.socionet.ru/eer/ ~/var/opt/input/eer/# echo ~/var/opt/input/eer/
+ rsync -qa rsync://1.old.socionet.ru/eer/ ~/var/opt/input/eer/
  sleep 001
- # echo ~/var/opt/input/eus/
- rsync -qa --delete rsync://1.old.socionet.ru/eus/ ~/var/opt/input/eus/
+
+ ## --delete rsync://1.old.socionet.ru/eus/ ~/var/opt/input/eus/# echo ~/var/opt/input/eus/
+ rsync -qa rsync://1.old.socionet.ru/eus/ ~/var/opt/input/eus/
  sleep 001
- # echo ~/var/opt/input/gai/
- rsync -qa --delete rsync://1.old.socionet.ru/gai/ ~/var/opt/input/gai/
+
+ ## --delete rsync://1.old.socionet.ru/gai/ ~/var/opt/input/gai/# echo ~/var/opt/input/gai/
+ rsync -qa rsync://1.old.socionet.ru/gai/ ~/var/opt/input/gai/
  sleep 001
- ## echo ~/var/opt/input/hea/
- #rsync -qa --delete rsync://1.old.socionet.ru/hea/ ~/var/opt/input/hea/
+
+ ## --delete rsync://1.old.socionet.ru/hea/ ~/var/opt/input/hea/## echo ~/var/opt/input/hea/
+ #rsync -qa rsync://1.old.socionet.ru/hea/ ~/var/opt/input/hea/
  #sleep 001
- # echo ~/var/opt/input/hig/
- rsync -qa --delete rsync://1.old.socionet.ru/hig/ ~/var/opt/input/hig/
+
+ ## --delete rsync://1.old.socionet.ru/hig/ ~/var/opt/input/hig/# echo ~/var/opt/input/hig/
+ rsync -qa rsync://1.old.socionet.ru/hig/ ~/var/opt/input/hig/
  sleep 001
- # echo ~/var/opt/input/mce/
- rsync -qa --delete rsync://1.old.socionet.ru/mce/ ~/var/opt/input/mce/
+
+ ## --delete rsync://1.old.socionet.ru/mce/ ~/var/opt/input/mce/# echo ~/var/opt/input/mce/
+ rsync -qa rsync://1.old.socionet.ru/mce/ ~/var/opt/input/mce/
  sleep 001
- # echo ~/var/opt/input/mmb/
- rsync -qa --delete rsync://1.old.socionet.ru/mmb/ ~/var/opt/input/mmb/
+
+ ## --delete rsync://1.old.socionet.ru/mmb/ ~/var/opt/input/mmb/# echo ~/var/opt/input/mmb/
+ rsync -qa rsync://1.old.socionet.ru/mmb/ ~/var/opt/input/mmb/
  sleep 001
- # echo ~/var/opt/input/nos/
- rsync -qa --delete rsync://1.old.socionet.ru/nos/ ~/var/opt/input/nos/
+
+ ## --delete rsync://1.old.socionet.ru/nos/ ~/var/opt/input/nos/# echo ~/var/opt/input/nos/
+ rsync -qa rsync://1.old.socionet.ru/nos/ ~/var/opt/input/nos/
  sleep 001
- # echo ~/var/opt/input/qnt/
- rsync -qa --delete rsync://1.old.socionet.ru/qnt/ ~/var/opt/input/qnt/
+
+ ## --delete rsync://1.old.socionet.ru/qnt/ ~/var/opt/input/qnt/# echo ~/var/opt/input/qnt/
+ rsync -qa rsync://1.old.socionet.ru/qnt/ ~/var/opt/input/qnt/
  sleep 001
- # echo ~/var/opt/input/rnp/
- rsync -qa --delete rsync://1.old.socionet.ru/rnp/ ~/var/opt/input/rnp/
+
+ ## --delete rsync://1.old.socionet.ru/rnp/ ~/var/opt/input/rnp/# echo ~/var/opt/input/rnp/
+ rsync -qa rsync://1.old.socionet.ru/rnp/ ~/var/opt/input/rnp/
  sleep 001
- # echo ~/var/opt/input/rua/
- rsync -qa --delete rsync://1.old.socionet.ru/rua/ ~/var/opt/input/rua/
+
+ ## --delete rsync://1.old.socionet.ru/rua/ ~/var/opt/input/rua/# echo ~/var/opt/input/rua/
+ rsync -qa rsync://1.old.socionet.ru/rua/ ~/var/opt/input/rua/
  sleep 001
- # echo ~/var/opt/input/scn/
- rsync -qa --delete rsync://1.old.socionet.ru/scn/ ~/var/opt/input/scn/
+
+ ## --delete rsync://1.old.socionet.ru/scn/ ~/var/opt/input/scn/# echo ~/var/opt/input/scn/
+ rsync -qa rsync://1.old.socionet.ru/scn/ ~/var/opt/input/scn/
  sleep 001
- # echo ~/var/opt/input/sps/
- rsync -qa --delete rsync://1.old.socionet.ru/sps/ ~/var/opt/input/sps/
+
+ ## --delete rsync://1.old.socionet.ru/sps/ ~/var/opt/input/sps/# echo ~/var/opt/input/sps/
+ rsync -qa rsync://1.old.socionet.ru/sps/ ~/var/opt/input/sps/
  sleep 001
- # echo ~/var/opt/input/upa/
- rsync -qa --delete rsync://1.old.socionet.ru/upa/ ~/var/opt/input/upa/
+
+ ## --delete rsync://1.old.socionet.ru/upa/ ~/var/opt/input/upa/# echo ~/var/opt/input/upa/
+ rsync -qa rsync://1.old.socionet.ru/upa/ ~/var/opt/input/upa/
  sleep 001
- ## echo ~/var/opt/input/ura/
- #rsync -qa --delete rsync://1.old.socionet.ru/ura/ ~/var/opt/input/ura/
+
+ ## --delete rsync://1.old.socionet.ru/ura/ ~/var/opt/input/ura/## echo ~/var/opt/input/ura/
+ #rsync -qa rsync://1.old.socionet.ru/ura/ ~/var/opt/input/ura/
  #sleep 001
- # echo ~/var/opt/input/hig/
- rsync -qa --delete rsync://1.old.socionet.ru/hig/ ~/var/opt/input/hig/
+
+ ## --delete rsync://1.old.socionet.ru/hig/ ~/var/opt/input/hig/# echo ~/var/opt/input/hig/
+ rsync -qa rsync://1.old.socionet.ru/hig/ ~/var/opt/input/hig/
  sleep 001
- # echo ~/var/opt/input/gai/
- rsync -qa --delete rsync://1.old.socionet.ru/gai/ ~/var/opt/input/gai/
+
+ ## --delete rsync://1.old.socionet.ru/gai/ ~/var/opt/input/gai/# echo ~/var/opt/input/gai/
+ rsync -qa rsync://1.old.socionet.ru/gai/ ~/var/opt/input/gai/
  sleep 001
- # echo n/ ~/var/opt/input/neicon/
- rsync -qa --delete rsync://1.old.socionet.ru/neicon/ ~/var/opt/input/neicon/
+
+ ## --delete rsync://1.old.socionet.ru/neicon/ ~/var/opt/input/neicon/# echo n/ ~/var/opt/input/neicon/
+ rsync -qa rsync://1.old.socionet.ru/neicon/ ~/var/opt/input/neicon/
  sleep 001
- # echo ~/var/opt/input/rnp
- rsync -qa --delete rsync://1.old.socionet.ru/rnp/ ~/var/opt/input/rnp
+
+ ## --delete rsync://1.old.socionet.ru/rnp/ ~/var/opt/input/rnp# echo ~/var/opt/input/rnp
+ rsync -qa rsync://1.old.socionet.ru/rnp/ ~/var/opt/input/rnp
  ~/perl/get_bada 1 &
  sleep 001
  # echo ~/perl/recitex.pl
 
 
-# rsync -qa --delete rsync://1.old.socionet.ru/cyrcitec/r-rnp/ ~/opt/vic_work/r-rnp
-# rsync -qa --delete rsync://1.old.socionet.ru/cyrcitec/r-gai/ ~/opt/vic_work/r-gai
+ ## --delete rsync://1.old.socionet.ru/cyrcitec/r-rnp/ ~/opt/vic_work/r-rnp
+
+ ## --delete rsync://1.old.socionet.ru/cyrcitec/r-gai/ ~/opt/vic_work/r-gai# rsync -qa rsync://1.old.socionet.ru/cyrcitec/r-rnp/ ~/opt/vic_work/r-rnp
+# rsync -qa rsync://1.old.socionet.ru/cyrcitec/r-gai/ ~/opt/vic_work/r-gai

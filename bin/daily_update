@@ -5,31 +5,34 @@ export PERL5LIB=/home/cec/lib/perl:/home/cec/usr/share/perl
 export LOG=/home/cec/var/log
 
 ~/perl/save_stats > $LOG/save_stats.log 2> $LOG/save_stats.err
-
-~/perl/spz_to_lafka 2000 > ~/var/log/spz2l.log 2> ~/var/log/spz2l.err
-~/perl/deal_with_warcs_peren  > $LOG/dwwp.log 2> $LOG/dwwp.err
-find ~/opt/peren -type d -empty -delete
-~/perl/build_sph_handles > $LOG/bsh.log 2> $LOG/bsh.err
-~/perl/build_sphinx_index
-~/perl/fire_up_recitex > $LOG/ar.log 2> $LOG/ar.err
+#~/perl/spz_to_lafka 2000 > ~/var/log/spz2l.log 2> ~/var/log/spz2l.err
+#~/perl/deal_with_warcs_peren  > $LOG/dwwp.log 2> $LOG/dwwp.err
+#find ~/opt/peren -type d -empty -delete
+#~/perl/build_sph_handles > $LOG/bsh.log 2> $LOG/bsh.err
+#~/perl/build_sphinx_index
+#~/perl/fire_up_recitex > $LOG/ar.log 2> $LOG/ar.err
 # ~/perl/apply_recitex > $LOG/ar.log 2> $LOG/ar.err
-~/perl/fire_up_gather_recika 6 > $LOG/gather_recika.log 2> $LOG/gather_recika.err
+#~/perl/fire_up_gather_recika 6 > $LOG/gather_recika.log 2> $LOG/gather_recika.err
 # this risky
 ~/perl/stats > $LOG/stats.log 2> $LOG/stats.err
 ~/perl/cover_stats > $LOG/cover_stats.log 2> $LOG/cover_stats.err
+~/python/group.py > $LOG/group.log 2> $LOG/group.err
+~/python/langs_series.py > $LOG/langs_series.log 2> $LOG/langs_series.err
+~/python/disciplines_groups > $LOG/disciplines_groups.log $LOG/disciplines_groups.err
+
 
 ## produces raw files
 ###~/perl/fixes_input > $LOG/fi.log 2> $LOG/fi.err
 
-/usr/bin/rsync -qa  ~/opt/peren/ --include=*/ --include 'summary.xml' --exclude '*' adnetec@iripa:opt/vic/ &
+#/usr/bin/rsync -qa  ~/opt/peren/ --include=*/ --include 'summary.xml' --exclude '*' adnetec@iripa:opt/vic/ &
 
 ## index
 #rm ~/opt/refidx/* ; ~/perl/refidx.pl -r ~/opt/peren/ -i summary.xml  -b ~/opt/refidx/ something > $LOG/refidx.log
-rm ~/opt/refidx/r_* ; ~/perl/refidx.pl -r ~/opt/peren/ -i summary.xml  -b ~/opt/refidx > $LOG/refidx.log
-~/perl/bundles > $LOG/bundles.log
+#rm ~/opt/refidx/r_* ; ~/perl/refidx.pl -r ~/opt/peren/ -i summary.xml  -b ~/opt/refidx > $LOG/refidx.log
+###~/perl/bundles > $LOG/bundles.log
 
 ## the basic stem file
-~/perl/stem_fixes > $LOG/stem_fixes.log 2> $LOG/stem_fixes.err
+#~/perl/stem_fixes > $LOG/stem_fixes.log 2> $LOG/stem_fixes.err
 
 ## this script stores its output in the current directp
 ##cd ~/public_html/opt/bundles/Word2Vec/ ; /home/prl/BK/citcon4bundles.pl > $LOG/citcon4bundles.log 2> $LOG/citcon4bundles.err ; cd
@@ -45,3 +48,6 @@ rm ~/opt/refidx/r_* ; ~/perl/refidx.pl -r ~/opt/peren/ -i summary.xml  -b ~/opt/
 
 ###cd ~/opt/perl ;  /home/prl/perl/summary.cgi  > $LOG/prl_summary.log 2> $LOG/prl_summary.err
 ###cd ; ~/perl/bundles > $LOG/bundles.log 2> $LOG/bundles.err
+
+~/bin/export_to_evstu
+

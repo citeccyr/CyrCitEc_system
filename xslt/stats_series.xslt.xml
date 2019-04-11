@@ -10,23 +10,51 @@
   <xsl:param name="prevpath"/>
   <xsl:variable name="title">
     <xsl:value-of select="$project"/>
-    <xsl:text>&#32;results for series&#32;</xsl:text>
-    <a>
-      <xsl:attribute name="href">
-	<xsl:value-of select="$collection_linker"/>
-	<xsl:value-of select="$series_handle"/>
-      </xsl:attribute>
-      <xsl:value-of select="$series_handle_repec"/>
-    </a>
+    <xsl:text>&#32;results for&#32;</xsl:text>
+    <xsl:choose>
+      <xsl:when test="$group">
+	<xsl:value-of select="$series_type_name"/>
+	<xsl:text>&#32;of group&#32;</xsl:text>
+	<xsl:value-of select="$group"/>
+      </xsl:when>
+      <xsl:otherwise>
+	<xsl:text>&#32;series&#32;</xsl:text>
+	<a>
+	  <xsl:attribute name="href">
+	    <xsl:value-of select="$collection_linker"/>
+	    <xsl:value-of select="$series_handle"/>
+	  </xsl:attribute>
+	  <xsl:value-of select="$series_handle_repec"/>
+	</a>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+  <xsl:variable name="series_type">
+    <xsl:value-of select="/series/@series_type"/>
+  </xsl:variable>
+  <xsl:variable name="group">
+    <xsl:value-of select="/series/@group"/>
+  </xsl:variable>
+  <xsl:variable name="series_type_name">
+    <xsl:value-of select="substring-before($series_type,'_')"/>
+    <xsl:text>&#32;</xsl:text>
+    <xsl:value-of select="substring-after($series_type,'_')"/>
   </xsl:variable>
   <xsl:variable name="date"
 		select="/table/@date"/>
   <xsl:variable name="series_handle">
-    <xsl:call-template name="handle_to_series">
-      <xsl:with-param name="in">
-	<xsl:value-of select="/series/doc[1]/@handle"/>
-      </xsl:with-param>
-    </xsl:call-template>
+    <xsl:choose>
+      <xsl:when test="/series/@series_type">
+	<xsl:value-of select="/series/@series_type"/>
+      </xsl:when>
+      <xsl:otherwise>
+	<xsl:call-template name="handle_to_series">
+	  <xsl:with-param name="in">
+	    <xsl:value-of select="/series/doc[1]/@handle"/>
+	  </xsl:with-param>
+	</xsl:call-template>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:variable>
   <xsl:variable name="series_handle_repec">
     <xsl:call-template name="repec">

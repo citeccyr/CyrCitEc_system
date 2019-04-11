@@ -22,7 +22,7 @@ use Cec::Paths;
 my $motto='spz';
 
 my %o;
-getopts('pvr:ia:usd:w:n',\%o);
+getopts('pvr:ia:usd:w:ny:',\%o);
 
 my $do_date=$o{'d'} // '';
 my $do_verbose=$o{'v'} // '';
@@ -33,9 +33,10 @@ my $do_ago=$o{'a'} // '';
 my $do_input_read=$o{'i'} // '';
 my $skip_input_read=$o{'s'} // '';
 my $do_wait=$o{'w'} // 0;
+## overwrite the  
+my $do_young=$o{'y'} // 10;
 my $skip_existing_warc=$o{'n'} // '';
 my $skip_existing_pdf=$o{'p'} // '';
-
 my $dirs=$Cec::Paths::dirs;
 my $files=$Cec::Paths::files;
 my $home_dir=$dirs->{'home'};
@@ -130,6 +131,7 @@ if($do_update=$o{'u'} or $do_ago=$o{'a'}) {
 }
 
 my $i=Lafka::Input->new({'ris' => 'spz',
+			 'do_young' => $do_young,
 			 'skip_existing' => $skip_existing_warc,
 			 'skip_pdf' => $skip_existing_pdf,
 			 'wait' => $do_wait,

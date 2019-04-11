@@ -6,6 +6,7 @@
 		exclude-result-prefixes="#default">
   <xsl:include href="common_bundles.xslt.xml"/>
   <xsl:include href="intextref.xslt.xml"/>
+  <xsl:param name="showrefs"/>
   <xsl:variable name="title">
     <xsl:text>Papers citing&#32;</xsl:text>
     <xsl:value-of select="$vic_cite"/>
@@ -22,6 +23,7 @@
       <tr>
 	<th>#</th>
 	<th>citing paper</th>
+        <xsl:if test="$showrefs='1'"><th>refs</th></xsl:if>
 	<th>cits</th>
       </tr>
       <xsl:for-each select="/bundle/ref">
@@ -41,6 +43,7 @@
 			      select="./citer"/>
 	    </xsl:call-template>
 	  </td>
+          <xsl:if test="$showrefs='1'"><td><xsl:value-of select="@refs"/><xsl:if test="not(@refs) or @refs=''">0</xsl:if></td></xsl:if>
 	  <xsl:text>&#10;</xsl:text>
 	  <td align="right">
 	    <xsl:value-of select="count(./intextref)"/>

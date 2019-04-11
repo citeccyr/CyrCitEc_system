@@ -1,0 +1,207 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use Carp qw(confess);
+use Data::Dumper;
+use File::Basename;
+use Getopt::Std;
+use List::Util qw(shuffle);
+use XML::LibXML;
+use XML::LibXML::XPathContext;
+
+use Cec::Dates;
+use Cidig::Peren;
+use Cec::Paths;
+use Cec::Summary;
+use Lafka::Json;
+
+use lib '/home/prl/perl/Modules/';
+use BundleConfig;
+
+## -r restrict
+my %o;
+getopts('m:r:vog:',\%o);
+
+my $do_max=$o{'m'};
+my $do_restrict=$o{'r'};
+my $do_view=$o{'v'};
+my $only_cror=$o{'o'};
+
+#-g Christopher-Baum
+my %settings = %{BundleConfig->new($o{'g'})};
+
+
+my $dirs=$Cec::Paths::dirs;
+my $files=$Cec::Paths::files;
+my $xcont_file=$settings{'xcont_json'} // confess "I need the defined.";
+my $crorf_file=$settings{'crorf_json'} // confess "I need the defined.";
+
+if($do_max) {
+  $xcont_file=~s|\.json$|.test.json|;
+}
+my $peren_base_dir=$dirs->{'peren'};
+my $out_tmp_file='/tmp/xcont.prl';
+my $p=Cidig::Peren->new({'verbose'=>'1',
+			 'force'=>0});
+my $end='/summary.xml';
+my $tmp_file=$p->prep_file_list($end);
+
+my $total_files=`grep -c ^ $tmp_file`;
+chomp $total_files;
+
+my $xpc = XML::LibXML::XPathContext->new();
+
+## only to cror structure
+if($o{'o'}) {
+  my $xcont=&Lafka::Json::load($xcont_file);
+  &do_crorf($xcont_file);
+  exit;
+}
+
+## main structure to be filed.
+my $out=[];
+if($do_view) {
+  $out=&Lafka::Json::load($xcont_file);
+  print Dumper $out;
+  exit;
+}
+
+## default
+my $xcont=&do_xcont();
+&do_crorf($xcont);
+exit;
+
+sub do_xcont {
+  my $count_done=0;
+  my $count_skipped=0;
+  my $peren_dir;
+  foreach $peren_dir (shuffle `cat $tmp_file`) {
+    chomp $peren_dir;
+    if($do_restrict) {
+      if(not $peren_dir=~m|\Q$do_restrict\E|) {
+	next;
+      }
+    }
+    my $in_file=$peren_dir.$end;
+    #die $in_file;
+    if(not -f $in_file) {
+      print "I don't see $in_file\n";
+      next;
+    }
+    my $fandle=substr($in_file,length($peren_base_dir)+1);
+    ## make it work for SeP to see
+    $fandle=~s|%3A|%253A|g;
+    my $rec->{'file'}=$fandle;
+    my $source;
+    eval {
+      $source = XML::LibXML->load_xml(location => $in_file);
+    };
+    if(not $source) {
+      print "I can't parse $in_file.\n";
+      #$d->{$fandle}->{'v'}=$shoti;
+      next;
+    }
+    my $handle=&Cec::Summary::collect_handle($source,$in_file);
+    if(not $handle) {
+      print "I can't get a handle from $in_file.\n";
+      #$d->{$fandle}->{'v'}=$shoti;
+      next;
+    }
+    $rec->{'file'}=$fandle;
+    ## d keys as requested by SeP
+    my $d=[];
+    my @xcont_intexts=$xpc->find('//intextref[count(Reference)>1]',$source)->get_nodelist();
+    if(not scalar @xcont_intexts) {
+      next;
+    }
+    ## a cache for reference starts
+    my $starts={};
+    my $add_it=0;
+    foreach my $ele (@xcont_intexts) {
+      my $start=$xpc->findvalue('Start',$ele);
+      if(not defined($start)) {
+	next;
+      }
+      my $cont_hand="$handle+$start";
+      my $xref={};
+      $xref->{'intextref'}=$cont_hand;
+      foreach my $ref_ele ($xpc->find('Reference',$ele)->get_nodelist()) {
+	$add_it=1;
+	my $co_ref={};
+	my $num=$ref_ele->textContent();
+	if(not defined($num)) {
+	  next;
+	}
+	## if the id of the ref has been fonud, use that
+	$co_ref->{'num'}=$num;
+	if($starts->{$num}) {
+	  $co_ref->{'id'}="$handle+".$starts->{$num};
+	}
+	else {
+	  my $xp='//reference[@'.'num='.$num.']/@'.'start';
+	  my $start=$xpc->findvalue($xp,$source);
+	  $starts->{$num}=$start;
+	  $co_ref->{'id'}="$handle+".$starts->{$num};
+	}
+	push(@{$xref->{'co-refs'}},$co_ref);
+      }
+      push(@$d,$xref);
+    }
+    $rec->{'d'}=$d;
+    if($add_it) {
+      push(@{$out},$rec);
+    }
+    $count_done++;
+    if($o{'m'} and  $count_done > $o{'m'}) {
+      print Dumper $out;
+      exit;
+    }
+  }
+  return $out;
+}
+
+sub do_crorf {
+  my $xcont=shift // confess "I need an arrayref or file here.";
+  if(ref($xcont) ne 'ARRAY') {
+    $xcont=&Lafka::Json::load($xcont);
+  }
+  my $c;
+  foreach my $part (@$xcont) {
+    #print Dumper $part;
+    foreach my $couple (@{$part->{'d'}}) {
+      my @bundle;
+      foreach my $couple (@{$couple->{'co-refs'}}) {
+	#print Dumper $couple;
+	push(@bundle,$couple->{'id'});
+      }
+      #print Dumper @bundle;
+      foreach my $e1 (@bundle) {
+	foreach my $e2 (@bundle) {
+	  if($e1 eq $e2) {
+	    next;
+	  }
+	  $c->{$e1}->{$e2}+=0.5;
+	  $c->{$e2}->{$e1}+=0.5;
+	  # $c->{'file'}=$part->{'file'};
+	}
+      }
+    }
+    #print Dumper $c;
+  }
+  #print Dumper $c;
+  &Lafka::Json::save($c,$crorf_file);
+}
+
+
+
+
+sub dbg {
+	if( ref($_[0]) eq 'HASH' || ref($_[0]) eq 'ARRAY' ) { print Dumper($_[0]); }
+	elsif($_[0]) { print $_[0]."\n"; }
+	else { print "-EMPTY-\n"; }
+}
+sub me {
+	dbg(shift);	exit;
+}

@@ -1,0 +1,50 @@
+#!/usr/bin/python3
+
+
+import re                          # Регулярные выражения.
+import os
+import sys
+import pymorphy2                   # Морфологический анализатор.
+from collections import Counter    # Не считать же частоты самим.
+
+infile=os.path.basename(sys.argv[1])
+infile='/home/cec/w2v/' + infile
+f = open(infile, 'r')
+
+## qline=f.readline()
+
+morph=pymorphy2.MorphAnalyzer() # Создает объект морфоанализатора и загружет словарь.
+
+def stem(text, needPos=None):
+    tokens=text.split()
+    s=''
+    for w in tokens:
+        wordform=morph.parse(w)[0]
+        s+=str(wordform.normal_form)
+        s+=' '
+    return s
+
+def stempos(text, needPos=None):
+  words=[a[0] for a in re.findall("([А-ЯЁа-яё]+(-[А-ЯЁа-яё]+)*)", text)]
+  reswords=[]
+  for w in words:
+    wordform=morph.parse(w)[0]
+    ## do all wordforms
+    ## if wordform.tag.POS in ['ADJF', 'NOUN', 'VERB']:
+    reswords.append(wordform.normal_form + '_' + str(wordform.tag.POS))
+  return reswords
+
+
+count=0
+with open(infile) as f:
+  for line in f:
+    s=stempos(line)
+    line=''
+    for w in s:
+      line=line + ' ' + w
+    line=line[1:]
+    print(line)
+    #count=count + 1
+    #if count > 100:
+    #  break
+#out.close

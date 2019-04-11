@@ -1,0 +1,96 @@
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns="http://www.w3.org/1999/xhtml"
+                exclude-result-prefixes="#default">
+  <xsl:include href="converters.xslt.xml"/>
+  <xsl:include href="stats_cover_explain.xslt.xml"/>
+  <xsl:include href="footer.xslt.xml"/>
+  <xsl:include href="page.xslt.xml"/>
+  <xsl:include href="stats_css.xslt.xml"/>
+  <xsl:include href="sums_row_table.xslt.xml"/>
+  <xsl:variable name="prevpath"/>
+  <!-- no date in the XML --> 
+  <xsl:variable name="date"
+                select="/table/@date"/>    
+  <xsl:variable name="date_pretty"
+                select="translate($date,'-','–')"/>
+  <xsl:variable name="title">
+    <xsl:text>&#32;The&#32;</xsl:text>
+    <a href="/">
+      <xsl:value-of select="$project"/>
+    </a>
+    <xsl:text>&#32;groups</xsl:text>
+  </xsl:variable>
+  <xsl:template name="results">
+    <h1>
+      <xsl:copy-of select="$title"/>
+    </h1>
+    <h2>
+      <xsl:text>Personal groups</xsl:text>
+    </h2>
+    <ul>
+      <xsl:for-each select="/groups/group">      
+	<li>
+	  <a>
+	    <xsl:attribute name="href">
+	      <xsl:text>/groups/</xsl:text>
+	      <xsl:value-of select="./@handle"/>
+	      <xsl:text>/</xsl:text>
+	    </xsl:attribute>
+	    <xsl:value-of select="./@handle"/>
+	  </a>
+	</li>
+      </xsl:for-each>
+    </ul>
+    <h2>
+      <xsl:text>Groups by language of series</xsl:text>
+    </h2>
+    <ul>
+      <li>
+	<a href="en.html">
+	  <xsl:text>mostly English</xsl:text>
+	</a>
+      </li>
+      <li>
+	<a href="ru.html">
+	  <xsl:text>mostly Russian</xsl:text>
+	</a>
+      </li>
+    </ul>
+    <h2>
+      <a href="disciplines.html">
+	<xsl:text>Groups by discipline</xsl:text>
+      </a>
+    </h2>
+    <!--    <ul> -->
+    <!--      <li> -->
+    <!--	<a class="discipline" href="economics.html"> -->
+    <!--	  <xsl:text>economics</xsl:text> -->
+    <!--	</a> -->
+    <!--      </li> -->
+    <!--      <li> -->
+    <!--	<a class="discipline" href="ekonomika.html"> -->
+    <!--	  <xsl:text>ekonomika</xsl:text> -->
+    <!--	</a> -->
+    <!--      </li> -->
+    <!--    </ul> -->
+    <xsl:call-template name="footer">
+      <xsl:with-param name="date_pretty"
+		      select="$date_pretty"/>
+    </xsl:call-template>
+  </xsl:template>
+  <xsl:template match="/">
+    <xsl:call-template name="page">
+      <xsl:with-param name="title"
+                      select="$title"/>
+      <xsl:with-param name="body">
+        <xsl:call-template name="results"/>
+      </xsl:with-param>
+      <xsl:with-param name="extra_head">
+      </xsl:with-param>
+      <xsl:with-param name="css_data">
+        <xsl:copy-of select="$css"/>
+      </xsl:with-param>
+    </xsl:call-template>
+  </xsl:template>
+</xsl:stylesheet>

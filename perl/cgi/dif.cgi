@@ -29,11 +29,14 @@ print get_dif();
 sub get_dif
 {
   my $code = $que->param('code');
-  my $json = &File::Slurper::read_text($dirs->{'www_w2v'}.'/internal_clusters.json');
+#print $dirs->{'www_w2v'}.'/internal_clusters.json';
+  my $type = $que->param('type') || 'analysis';
+#print $dirs->{$type}.'/Word2Vec/internal_clusters.json';
+  my $json = &File::Slurper::read_text($dirs->{$type}.'/Word2Vec/internal_clusters.json'); # $dirs->{'www_w2v'}
   my $jdata = JSON::XS->new->decode ($json);
   my $hs = $jdata->{$code};
 
-  my $bndl = new BundleXml($code);
+  my $bndl = new BundleXml($code, { 'type' => $type });
 
   foreach my $num (keys %{$hs->{'internal_clusters'}}) {
       #print Dumper( $hs->{'internal_clusters'}->{$num} );

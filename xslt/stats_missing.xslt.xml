@@ -11,48 +11,129 @@
   <xsl:param name="page_type"/>
   <xsl:param name="date_pretty"/>
   <xsl:param name="prevpath"/>
+  <xsl:variable name="has_group"
+		select="string-length(//@group)"/>
+  <xsl:variable name="the_group"
+		select="//@group"/>
+  <xsl:variable name="the_series"
+		select="//@series"/>
+  <xsl:variable name="pretty_series">
+    <xsl:value-of select="substring-before($the_series,'_')"/>
+    <xsl:text>&#32;</xsl:text>
+    <xsl:value-of select="substring-after($the_series,'_')"/>
+  </xsl:variable>
   <xsl:variable name="title">
+    <xsl:variable name="what">
+      <xsl:choose>
+	<xsl:when test="$page_type='items'">
+	  <xsl:text>item</xsl:text>
+	</xsl:when>
+	<xsl:otherwise>
+	  <xsl:text>record</xsl:text>
+	</xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
     <xsl:choose>
       <xsl:when test="count(/series/papers)=1">
-	<xsl:text>The record&#32;</xsl:text>
+	<xsl:text>The </xsl:text>
+	<xsl:value-of select="$what"/>
+	<xsl:text>&#32;</xsl:text>
       </xsl:when>
       <xsl:otherwise>
 	<xsl:text>The&#32;</xsl:text>
 	<xsl:value-of select="count(/series/papers)"/>
-	<xsl:text>&#32;records&#32;</xsl:text>
+	<xsl:text>&#32;</xsl:text>
+	<xsl:value-of select="$what"/>	
+	<xsl:text>s&#32;</xsl:text>
+      </xsl:otherwise>
+    </xsl:choose>    
+    <xsl:text>&#32;in series&#32;</xsl:text>
+    <xsl:choose>
+      <xsl:when test="$has_group">
+	<xsl:text>“</xsl:text>
+	<xsl:value-of select="$pretty_series"/>
+	<xsl:text>”</xsl:text>
+	<xsl:text> of group </xsl:text>
+	<a href="..">
+	  <xsl:value-of select="$the_group"/>
+	</a>
+      </xsl:when>
+      <xsl:otherwise>
+	<a>
+	  <xsl:attribute name="href">
+	    <xsl:value-of select="$collection_linker"/>
+	    <xsl:value-of select="/series/@handle"/>
+	  </xsl:attribute>
+	  <xsl:value-of select="$series_handle_repec"/>
+	</a>
       </xsl:otherwise>
     </xsl:choose>
-    <xsl:text>&#32;in series&#32;</xsl:text>
-    <a>
-      <xsl:attribute name="href">
-	<xsl:value-of select="$collection_linker"/>
-	<xsl:value-of select="/series/@handle"/>
-      </xsl:attribute>
-      <xsl:value-of select="$series_handle_repec"/>
-    </a>
     <!-- ## page type '_' is for all records -->
     <xsl:if test="not($page_type='_')">
-      <xsl:text>&#32;for which </xsl:text>
-      <xsl:value-of select="$project"/>
-      <xsl:text>&#32;does not have&#32;</xsl:text>
       <xsl:choose>
-	<xsl:when test="$page_type='has_futli'">
-	  <xsl:text>any full-text links</xsl:text>
-	</xsl:when>
-	<xsl:when test="$page_type='warcs'">
-	  <xsl:text>&#32;a web archive</xsl:text>
-	</xsl:when>
-	<xsl:when test="$page_type='pdf_warcs'">
-	  <xsl:text>&#32;a PDF file in the web archive</xsl:text>
-	</xsl:when>
-	<xsl:when test="$page_type='json'">
-	  <xsl:text>&#32;a PDF file coverted to JSON</xsl:text>
+	<xsl:when test="/series/@full">
 	</xsl:when>
 	<xsl:otherwise>
-	  <xsl:comment>
-	    <xsl:text>ERROR: I can't handle the case </xsl:text>
-	    <xsl:value-of select="$page_type"/>
-	  </xsl:comment>
+	  <xsl:text>&#32;for which </xsl:text>
+	  <a href="/">
+	    <xsl:value-of select="$project"/>
+	  </a>
+	  <xsl:text>&#32;has items&#32;</xsl:text>
+	  <!-- isolate the group case -->
+	  <xsl:choose>
+	    <xsl:when test="$has_group">
+	      <!--	  <xsl:text>|</xsl:text> -->
+	      <!--	  <xsl:value-of select="$page_type"/> -->
+	      <!--	  <xsl:text>|</xsl:text> -->
+	      <xsl:choose>
+		<xsl:when test="$page_type='items'">
+		  <xsl:text>but does not have records</xsl:text>
+		</xsl:when>
+		<xsl:when test="$page_type='records'">
+		  <xsl:text>without links to full texts</xsl:text>
+		</xsl:when>
+		<xsl:when test="$page_type='warcs'">
+		  <xsl:text>with a warc that has no PDF instance of the paper</xsl:text>
+		</xsl:when>
+		<xsl:when test="$page_type='jsons'">
+		  <xsl:text>with a json that we have no citations summary for</xsl:text>
+		</xsl:when>
+	      </xsl:choose>
+	    </xsl:when>
+	    <xsl:otherwise>
+	      <xsl:text>&#32;does not have&#32;</xsl:text>
+	      <xsl:choose>
+		<xsl:when test="$page_type='items'">
+		  <xsl:text>records</xsl:text>
+		</xsl:when>
+		<xsl:when test="$page_type='has_futli'">
+		  <xsl:text>any full-text links.</xsl:text>
+		</xsl:when>
+		<xsl:when test="$page_type='warcs'">
+		  <xsl:text>a web archive.</xsl:text>
+		</xsl:when>
+		<xsl:when test="$page_type='pdf_warcs'">
+		  <xsl:text>&#32;a PDF file in the web archive.</xsl:text>
+		</xsl:when>
+		<xsl:when test="$page_type='json'">
+		  <xsl:text>&#32;a PDF file coverted to JSON.</xsl:text>
+		</xsl:when>
+		<xsl:when test="$page_type='records'">
+		  <xsl:text>&#32;records</xsl:text>
+		</xsl:when>
+		<xsl:when test="$page_type='recika'">
+		  <xsl:text>results</xsl:text>
+		</xsl:when>
+		<xsl:otherwise>
+		  <xsl:value-of select="$page_type"/>
+		  <xsl:comment>
+		    <xsl:text>ERROR: I can't handle the case </xsl:text>
+		    <xsl:value-of select="$page_type"/>
+		  </xsl:comment>
+		</xsl:otherwise>
+	      </xsl:choose>
+	    </xsl:otherwise>
+	  </xsl:choose>
 	</xsl:otherwise>
       </xsl:choose>
     </xsl:if>
@@ -81,6 +162,16 @@
                               select="@handle"/>
 	    </xsl:call-template>
 	  </a>
+	  <xsl:if test="@perenfurl">
+	    <xsl:text>&#32;[</xsl:text>
+	    <a>
+	      <xsl:attribute name="href">
+		<xsl:value-of select="@perenfurl"/>
+	      </xsl:attribute>
+	      <xsl:text>data folder</xsl:text>
+	    </a>
+	    <xsl:text>]</xsl:text>
+	  </xsl:if>
 	</li>
 	<xsl:text>&#10;</xsl:text>
       </xsl:for-each>

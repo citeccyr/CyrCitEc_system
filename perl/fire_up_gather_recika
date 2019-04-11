@@ -8,7 +8,7 @@ use Cec::Paths;
 use Cidig::Peren;
 use Cec::Processes;
 
-my $total_fire_up=$ARGV[0] // 6;
+my $total_fire_up=$ARGV[0] // 30;
 my $dirs=$Cec::Paths::dirs;
 my $files=$Cec::Paths::files;
 my $script=$files->{'apply_recika_script'};

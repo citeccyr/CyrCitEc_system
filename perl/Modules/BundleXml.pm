@@ -13,7 +13,7 @@ use warnings;
 use MyXMLParser;
 use Data::Dumper;
 #use Template;
-use Cec::Paths;
+#use Cec::Paths;
 use Cyrcitec;
 use File::Slurper;
 
@@ -21,10 +21,13 @@ use File::Slurper;
 
 my $code;
 my $hs;
+my $dir_xml;
+#my $type = 'analysis';
 
 sub test {
   _init(@_);
-  return $code.'--'.Dumper(GetHashFirstReference ());
+  my $dirs=$Cec::Paths::dirs;
+  return $code.'--'.Dumper($dirs).'--'.GetPath(); # .Dumper(GetHashFirstReference ());
 }
 
 sub _init
@@ -33,6 +36,9 @@ sub _init
   my $c = shift;
   $code = $c if $c;
   undef $hs if $c;
+  my $o = shift;
+  #$type = $o->{'type'} if $o && $o->{'type'} && ($o->{'type'} eq 'repec_bundles' || $o->{'type'} eq 'bundles');
+  $dir_xml = $o->{'dir_xml'} if $o && $o->{'dir_xml'};
 }
 
 
@@ -48,6 +54,7 @@ sub GetHash
   if(!$hs) 
   {
     my $path = GetPath();
+#print $path;
     if($path) {
       my $xmlt = &File::Slurper::read_text($path);
       my $parser = new MyXMLParser('content' => $xmlt);
@@ -61,8 +68,10 @@ sub GetHash
 sub GetPath
 {
   _init(@_);
-  my $dirs=$Cec::Paths::dirs;
-  return $dirs->{'analysis_xml'}.'/'.$code.'.xml';
+  #my $dirs=$Cec::Paths::dirs;
+	#print Dumper($dirs);
+  #return $dirs->{$type.'_xml'}.'/'.$code.'.xml';
+  return $dir_xml.'/'.$code.'.xml'; 
 }
 
 

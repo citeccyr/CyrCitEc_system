@@ -27,7 +27,7 @@ use Cidig::Peren::Warcs  qw (peren_dir_from_warc_dir
 			     deal_with_warcs
 			     warc2text);
 ## ParsCit functionalty
-#use Cidig::Peren::ParsCit qw (parscit_texts
+#use Cidig::xPeren::ParsCit qw (parscit_texts
 #			      text2parscit);
 ### FindCit functionalty
 #use Cidig::Peren::FindCit  qw (findcit_texts
@@ -125,6 +125,20 @@ sub apply {
     push(@extras,$extra);
   }
   foreach my $file (shuffle @$files) {
+    ###
+    #if(not $file=~m|mprapa|) {
+    #  next;
+    #}
+    my $bad_file='/home/cec/opt/peren/RePEc/cep/cepdps/dp1300/0.pdf-stream.json';
+    if($file eq $bad_file) {
+      next;
+    }
+    if($file eq '/home/cec/opt/peren/RePEc/cep/cepdps/dp1300/0.pdf-stream.reci.xml') {
+      # print "I skip the bad $file\n";
+      next;
+      # exit;
+    }
+    #print "file is $file\n";
     if(not $file=~m|$in|) {
       next;
     }
@@ -166,7 +180,10 @@ sub apply {
     if(not -z $err) {
       my $err_text;
       eval { $err_text=&File::Slurper::read_text($err)};
-      warn "\n\nrecitex ended with an error\n '$err_text'.";
+      # warn "\n\nrecitex ended with an error\n '$err_text'.";
+      if($p->{'verbose'}) {
+	print "\n\nrecitex ended with an error\n '$err_text'.";
+      }
     }
     if($p->{'verbose'}) {
       print " done\n"

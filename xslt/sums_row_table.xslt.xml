@@ -9,60 +9,79 @@
 	<xsl:value-of select="count(/table/series)"/>
       </th>
       <xsl:text>&#10;</xsl:text>
-      <td class="records">
+      <td class="records tabdata">
 	<xsl:value-of select="sum(//records)"/>
+	<xsl:text> </xsl:text>
       </td>
       <xsl:text>&#10;</xsl:text>
-      <td class="has_futli">
+      <td class="has_futli tabdata">
 	<xsl:value-of select="sum(//has_futli)"/>
+	<xsl:text> </xsl:text>
       </td>
       <xsl:text>&#10;</xsl:text>
-      <td class="warcs">
+      <td class="warcs tabdata">
 	<xsl:value-of select="sum(//warcs)"/>
+	<xsl:text> </xsl:text>
       </td>
       <xsl:text>&#10;</xsl:text>
-      <td class="pdf_warcs">
+      <td class="pdf_warcs tabdata">
 	<xsl:value-of select="sum(//pdf_warcs)"/>
+	<xsl:text> </xsl:text>
       </td>
       <xsl:text>&#10;</xsl:text>
-      <td class="json">
+      <td class="json tabdata">
 	<xsl:value-of select="sum(//json)"/>
+	<xsl:text> </xsl:text>
       </td>
       <xsl:text>&#10;</xsl:text>
-      <td class="refs">
+      <td class="refs tabdata">
+	<xsl:value-of select="sum(//recika)"/>
+	<xsl:text> </xsl:text>
+      </td>
+      <xsl:text>&#10;</xsl:text>
+            <td class="refs tabdata">
 	<xsl:value-of select="sum(//refs)"/>
-      </td>
+	<xsl:text> </xsl:text>
+	    </td>
       <xsl:text>&#10;</xsl:text>
-      <td class="ints">
+      <td class="ints tabdata">
 	<xsl:value-of select="sum(//ints)"/>
+	<xsl:text> </xsl:text>
       </td>
       <xsl:text>&#10;</xsl:text>
-      <td class="cits">
+      <td class="cits tabdata">
 	<xsl:value-of select="sum(//cits)"/>
+	<xsl:text> </xsl:text>
       </td>
       <xsl:text>&#10;</xsl:text>
-      <td class="mits">
+      <td class="mits tabdata">
 	<xsl:value-of select="sum(//mits)"/>
+	<xsl:text> </xsl:text>
       </td>
       <xsl:text>&#10;</xsl:text>
-      <td class="cref">
+      <td class="cref tabdata">
 	<xsl:value-of select="sum(//cref)"/>
+	<xsl:text> </xsl:text>
       </td>
       <xsl:text>&#10;</xsl:text>
-      <td class="ccon">
-	<xsl:value-of select="sum(//ccon)"/>
-      </td>
-      <xsl:text>&#10;</xsl:text>
-      <td class="cint">
+      <td class="ccon tabdata">
 	<xsl:value-of select="sum(//cint)"/>
+	<xsl:text> </xsl:text>
       </td>
       <xsl:text>&#10;</xsl:text>
-      <td class="ccit">
+      <td class="cint tabdata">
+	<xsl:value-of select="sum(//ccon)"/>
+	<xsl:text> </xsl:text>
+      </td>
+      <xsl:text>&#10;</xsl:text>
+      <td class="ccit tabdata">
 	<xsl:value-of select="sum(//ccit)"/>
+	<xsl:text> </xsl:text>
       </td>
       <xsl:text>&#10;</xsl:text>
-      <td class="cmit">
+      <td class="cmit tabdata">
 	<xsl:value-of select="sum(//cmit)"/>
+	<xsl:text> </xsl:text>
       </td>
     </tr>
   </xsl:variable>

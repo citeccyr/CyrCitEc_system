@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns="http://www.w3.org/1999/xhtml"
+                exclude-result-prefixes="#default">
+  <xsl:include href="converters.xslt.xml"/>
+  <xsl:include href="footer.xslt.xml"/>
+  <xsl:include href="page.xslt.xml"/>
+  <xsl:include href="stats_css.xslt.xml"/>
+  <xsl:include href="sums_row_table.xslt.xml"/>
+  <xsl:param name="page_type"/>
+  <xsl:param name="date_pretty"/>
+  <xsl:param name="prevpath"/>
+  <xsl:variable name="title">
+    <xsl:choose>
+      <xsl:when test="count(/series/papers)=1">
+	<xsl:text>The record&#32;</xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+	<xsl:text>The&#32;</xsl:text>
+	<xsl:value-of select="count(/handles/item)"/>
+	<xsl:text>&#32;records&#32;</xsl:text>
+      </xsl:otherwise>
+    </xsl:choose>
+    <xsl:text>&#32;in series&#32;“</xsl:text>    
+    <xsl:value-of select="/handles/@series"/>
+    <xsl:text>”&#32;of group &#32;“</xsl:text>    
+    <a>
+      <xsl:attribute name="href">
+	<xsl:value-of select="$group_loc"/>
+	<xsl:value-of select="/handles/@group"/>
+      </xsl:attribute>
+      <xsl:value-of select="/handles/@group"/>
+    </a> 
+    <xsl:text>”</xsl:text>
+    <!-- ## page type '_' is for all records -->
+  </xsl:variable>
+  <xsl:template name="results">
+    <h1>
+      <xsl:copy-of select="$title"/>
+    </h1>
+    <ol>
+      <xsl:for-each select="/handles/item">
+	<li>
+	  <xsl:choose>
+	    <xsl:when test="./@status=1">
+	      <a>
+		<xsl:attribute name="href">
+		  <xsl:value-of select="$linker"/>
+		  <xsl:value-of select="@handle"/>
+		</xsl:attribute>
+		<xsl:call-template name="repec">
+		  <xsl:with-param name="in"
+				  select="@handle"/>
+		</xsl:call-template>
+	      </a>
+	    </xsl:when>
+	    <xsl:otherwise>
+	      <xsl:value-of select="@handle"/>
+	    </xsl:otherwise>
+	  </xsl:choose>
+	</li>
+	<xsl:text>&#10;</xsl:text>
+      </xsl:for-each>
+    </ol>
+    <xsl:call-template name="footer"/>
+  </xsl:template>
+  <xsl:template match="/">
+    <xsl:call-template name="page">
+      <xsl:with-param name="title"
+		      select="$title"/>
+      <xsl:with-param name="body">
+	<xsl:call-template name="results"/>
+      </xsl:with-param>
+      <xsl:with-param name="css_data">
+	<xsl:copy-of select="$css"/>
+      </xsl:with-param>
+    </xsl:call-template>
+  </xsl:template>
+</xsl:stylesheet>

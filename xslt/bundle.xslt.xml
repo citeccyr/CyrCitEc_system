@@ -8,12 +8,20 @@
 <!--  <xsl:include href="numbers.xslt.xml"/> -->
   <xsl:include href="page.xslt.xml"/>
   <xsl:include href="bundles_css.xslt.xml"/>
+  <xsl:param name="type"/>
+  <!-- ## can take value 'repec' -->
+  <xsl:param name="conf"/>
+  <xsl:variable name="and_conf"><xsl:if test="$conf!=''">&amp;c=<xsl:value-of select="$conf"/></xsl:if></xsl:variable>
   <xsl:variable name="date"
 		select="/table/@date"/>
   <xsl:variable name="date_pretty"
 		select="translate($date,'-','–')"/>
   <xsl:variable name="title">
-    <xsl:text>Index of References</xsl:text>
+    <xsl:text>Index of&#32;</xsl:text>
+    <xsl:if test="$type='repec'">
+      <xsl:text>RePEc&#32;</xsl:text>
+    </xsl:if>
+    <xsl:text>References</xsl:text>
   </xsl:variable>
   <xsl:template match="/">
     <xsl:call-template name="page">
@@ -37,6 +45,12 @@
     <h1>
       <xsl:value-of select="$title"/>
     </h1>
+<span style="display:none">
+  dif_url:<xsl:value-of select="$dif_url"/>
+  dis_url:<xsl:value-of select="$dis_url"/>
+  fra_url:<xsl:value-of select="$fra_url"/>
+  top_url:<xsl:value-of select="$top_url"/>
+</span>
     <xsl:text>&#10;</xsl:text>
     <h3>
       <xsl:text>References with =&gt; </xsl:text>
@@ -88,20 +102,28 @@
 	    <xsl:text>with</xsl:text>
 	  </a>
 	</th>
-	<th>
-	  <a href="#" onclick="return sort_table(4)">
-	    <xsl:text>dif</xsl:text>
-	  </a>
-	</th>
-	<th>
-	  <xsl:text>distribution</xsl:text>
-	</th>
-	<th>
-	  <xsl:text>common phrases</xsl:text>
-	</th>
-	<th>
-	  <xsl:text>topic models</xsl:text>
-	</th>
+	<xsl:if test="not($type='repec')">
+	  <th>
+	    <a href="#" onclick="return sort_table(4)">
+	      <xsl:text>dif</xsl:text>
+	    </a>
+	  </th>
+	</xsl:if>
+	<xsl:if test="not($type='repec')">
+	  <th>
+	    <xsl:text>distribution</xsl:text>
+	  </th>
+	</xsl:if>
+	<xsl:if test="not($type='repec')">
+	  <th>
+	    <xsl:text>common phrases</xsl:text>
+	  </th>
+	</xsl:if>
+	<xsl:if test="not($type='repec')">
+	  <th>
+	    <xsl:text>topic models</xsl:text>
+	  </th>
+	</xsl:if>
       </tr>
       <xsl:for-each select="/bundles/bundle">
 	<xsl:sort select="@npub" data-type="number" order="descending"/>
@@ -116,9 +138,10 @@
 	  <td align="left"
 	      style="align: left">
 	    <xsl:value-of select="@author"/>
-	    <xsl:text>&#32;(</xsl:text>
-	    <xsl:value-of select="@year"/>
-	    <xsl:text>)&#32;</xsl:text>
+	    <xsl:if test="@year">
+	      <xsl:text>&#32;</xsl:text>(<xsl:value-of select="@year"/>)
+	    </xsl:if>
+	    <xsl:text>&#32;</xsl:text>
 	    <xsl:value-of select="@title"/>
 	    <xsl:text>&#32;</xsl:text>
 	    <a>
@@ -170,53 +193,65 @@
 	    </a>
 	  </td>
 	  <xsl:text>&#10;</xsl:text>
-	  <td align="right"
-	      title="with"
+	  <xsl:if test="not($type='repec')">
+	    <td align="right"
+		title="with"
 	      style="align: right">
-	    <a>
-	      <xsl:attribute name="href">
-		<xsl:value-of select="$dif_url"/>
-		<xsl:value-of select="@bunshid"/>
-	      </xsl:attribute>
-	      <xsl:value-of select="@adist"/>
-	    </a>
-	  </td>
+	      <a>
+		<xsl:attribute name="href">
+		  <xsl:value-of select="$dif_url"/>
+		  <xsl:value-of select="@bunshid"/>
+		  <xsl:value-of select="$and_conf"/>
+		</xsl:attribute>
+		<xsl:value-of select="@adist"/>
+	      </a>
+	    </td>
+	  </xsl:if>
+	  <xsl:if test="not($type='repec')">
+	    <xsl:text>&#10;</xsl:text>
+	    <td align="right"
+		title="distribution"
+		style="align: right">
+	      <a>
+		<xsl:attribute name="href">
+		  <xsl:value-of select="$dis_url"/>
+		  <xsl:value-of select="@bunshid"/>
+		  <xsl:value-of select="$and_conf"/>
+		</xsl:attribute>
+		<xsl:value-of select="@ndis"/>
+	      </a>
+	    </td>
+	  </xsl:if>
 	  <xsl:text>&#10;</xsl:text>
-	  <td align="right"
-	      title="distribution"
-	      style="align: right">
-	    <a>
-	      <xsl:attribute name="href">
-		<xsl:value-of select="$dis_url"/>
-		<xsl:value-of select="@bunshid"/>
-	      </xsl:attribute>
-	      <xsl:value-of select="@ndis"/>
-	    </a>
-	  </td>
+	  <xsl:if test="not($type='repec')">
+	    <td align="right"
+		title="phrases"
+		style="align: right">
+	      <a>
+		<xsl:attribute name="href">
+		  <xsl:value-of select="$fra_url"/>
+		  <xsl:value-of select="@bunshid"/>
+		  <xsl:value-of select="$and_conf"/>
+		</xsl:attribute>
+		<xsl:value-of select="@phrase"/>
+	      </a>
+	    </td>
+	  </xsl:if>
 	  <xsl:text>&#10;</xsl:text>
-	  <td align="right"
-	      title="phrases"
-	      style="align: right">
-	    <a>
-	      <xsl:attribute name="href">
-		<xsl:value-of select="$fra_url"/>
-		<xsl:value-of select="@bunshid"/>
-	      </xsl:attribute>
-	      <xsl:value-of select="@phrase"/>
-	    </a>
-	  </td>
-	  <xsl:text>&#10;</xsl:text>
-	  <td align="right"
-	      title="distribution"
-	      style="align: right">
-	    <a>
-	      <xsl:attribute name="href">
-		<xsl:value-of select="$top_url"/>
-		<xsl:value-of select="@bunshid"/>
-	      </xsl:attribute>
-	      <xsl:value-of select="@topic"/>
-	    </a>
-	  </td>
+	  <xsl:if test="not($type='repec')">
+	    <td align="right"
+		title="distribution"
+		style="align: right">
+	      <a>
+		<xsl:attribute name="href">
+		  <xsl:value-of select="$top_url"/>
+		  <xsl:value-of select="@bunshid"/>
+		  <xsl:value-of select="$and_conf"/>
+		</xsl:attribute>
+		<xsl:value-of select="@topic"/>
+	      </a>
+	    </td>
+	  </xsl:if>
 	  <xsl:text>&#10;</xsl:text>
 	</tr>
 	<xsl:text>&#10;</xsl:text>

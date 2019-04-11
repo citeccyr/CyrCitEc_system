@@ -25,6 +25,7 @@
       <xsl:with-param name="css_data">
 	<xsl:copy-of select="$css"/>
          <style type="text/css">
+         #main_tbl { margin-top: 20px; }
 	 #main_tbl th { font-weight: bold; text-align: center; }
          #main_tbl td { text-align: center; padding: 2px 2px; }
          #main_tbl tr td:first-child { text-align: left}
@@ -50,8 +51,37 @@
 
     <!-- prl: -->
     <h3>References with => 10 citations in total: <xsl:value-of select="count(/bundles/bundle)"/></h3>
-    <h4>Explanatory table [<a class="u" href="#" id="explnk" onclick="return toggle_exp(this)">show</a>]</h4>
-    <table id="explain" style="display:none; margin-bottom: 20px;"><tr><td>[1]</td><td>metadata records available</td></tr></table>
+    <h4 style="margin-bottom: 0">Explanatory table [<a class="u" href="#" id="explnk" onclick="return toggle_exp(this)">show</a>]</h4>
+    <table id="explain" style="display:none;">
+      <!-- tr><td>[1]</td><td>metadata records available</td></tr -->
+        <tr><td>
+        <ul style="margin: 0">
+         <li><b>pubs</b> – a number of papers where the unique reference is found in the papers’ Reference list section (traditional citation index);
+         <li><b>cits</b> – a number of mentioning (in-text citations) of the unique reference in the papers’ content;
+         <li><b>with</b> – a number of other references mentioned together with the selected one which have the same citation context;
+         <li><b>dif</b> – an indicator of a lexical difference among citation contexts collected for the unique reference; a smaller number means more lexical similarity between the citation contexts; measured using the word embedding approach (<a href="https://en.wikipedia.org/wiki/Word_embedding">https://en.wikipedia.org/wiki/Word_embedding</a>) and the Word2Vec method (<a href="https://en.wikipedia.org/wiki/Word2vec">https://en.wikipedia.org/wiki/Word2vec</a>);
+         <li><b>distribution</b> – a spatial distribution of in-text citations for the unique reference over 5 equal fragments of papers’ content
+         <li><b>common phrases</b> – common phrases up to 6 words selected from the citation contexts by the N-gramm method (<a href="https://en.wikipedia.org/wiki/N-gram">https://en.wikipedia.org/wiki/N-gram</a>)
+         <li><b>topic models</b> – significant words (or abstract topics, <a href="https://en.wikipedia.org/wiki/Topic_model">https://en.wikipedia.org/wiki/Topic_model</a>) selected from the citation contexts using the method LDA (<a href="https://en.wikipedia.org/wiki/Latent_Dirichlet_allocation">https://en.wikipedia.org/wiki/Latent_Dirichlet_allocation</a>)
+        </ul>
+      </td></tr>
+    </table>
+
+
+    <!-- h4>Explanatory table [<a class="u" href="#" id="explnk" onclick="return toggle_exp(this)">show</a>]</h4>
+    <table id="explain" style="display:none; margin-bottom: 20px;">
+        <tr><td>
+        <ul>
+         <li><b>pubs</b> – a number of papers where the unique reference is found in the papers’ Reference list section (traditional citation index);
+         <li><b>cits</b> – a number of mentioning (in-text citations) of the unique reference in the papers’ content;
+         <li><b>with</b> – a number of other references mentioned together with the selected one which have the same citation context;
+         <li><b>dif</b> – an indicator of a lexical difference among citation contexts collected for the unique reference; a smaller number means more lexical similarity between the citation contexts; measured using the word embedding approach (<a href="https://en.wikipedia.org/wiki/Word_embedding">https://en.wikipedia.org/wiki/Word_embedding</a>) and the Word2Vec method (<a href="https://en.wikipedia.org/wiki/Word2vec">https://en.wikipedia.org/wiki/Word2vec</a>);
+         <li><b>distribution</b> – a spatial distribution of in-text citations for the unique reference over 5 equal fragments of papers’ content
+         <li><b>common phrases</b> – common phrases up to 6 words selected from the citation contexts by the N-gramm method (<a href="https://en.wikipedia.org/wiki/N-gram">https://en.wikipedia.org/wiki/N-gram</a>)
+         <li><b>topic models</b> – significant words (or abstract topics, <a href="https://en.wikipedia.org/wiki/Topic_model">https://en.wikipedia.org/wiki/Topic_model</a>) selected from the citation contexts using the method LDA (<a href="https://en.wikipedia.org/wiki/Latent_Dirichlet_allocation">https://en.wikipedia.org/wiki/Latent_Dirichlet_allocation</a>)
+        </ul>
+      </td></tr>
+    </table -->
 
     <xsl:text>&#10;</xsl:text>
     <table id="main_tbl">
@@ -141,7 +171,7 @@
 	    <a>
 	      <xsl:attribute name="href">
 		<xsl:value-of select="$dif_url"/>
-		<xsl:value-of select="@bunshid"/>
+		<xsl:value-of select="@bunshid"/>&amp;type=bundles<!-- &amp;type=repec_bundles -->
 	      </xsl:attribute>
               <xsl:value-of select="@adist"/>
 	    </a>
@@ -150,7 +180,7 @@
 	    <a>
 	      <xsl:attribute name="href">
 		<xsl:value-of select="$dis_url"/>
-		<xsl:value-of select="@bunshid"/>
+		<xsl:value-of select="@bunshid"/>&amp;type=bundles<!-- &amp;type=repec_bundles -->
 	      </xsl:attribute>
 	      <xsl:value-of select="@ndis"/>
 	    </a>
@@ -159,7 +189,7 @@
 	    <a>
 	      <xsl:attribute name="href">
 		<xsl:value-of select="$fra_url"/>
-		<xsl:value-of select="@bunshid"/>
+		<xsl:value-of select="@bunshid"/>&amp;type=bundles<!-- &amp;type=repec_bundles -->
 	      </xsl:attribute>
 	      <xsl:value-of select="@phrase"/>
 	    </a>
@@ -168,7 +198,7 @@
 	    <a>
 	      <xsl:attribute name="href">
 		<xsl:value-of select="$top_url"/>
-		<xsl:value-of select="@bunshid"/>
+		<xsl:value-of select="@bunshid"/>&amp;type=bundles<!-- &amp;type=repec_bundles -->
 	      </xsl:attribute>
 	      <xsl:value-of select="@topic"/>
 	    </a>

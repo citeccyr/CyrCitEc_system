@@ -30,7 +30,8 @@ sub save {
   if(not ref($data)) {
     confess "I can't encode $data";
   }
-  my $json=encode_json($data);
+  #my $json=encode_json($data);
+  my $json=JSON::XS->new->pretty(1)->encode($data);
   # &File::Slurper::write_text($file,$json);
   &File::Slurp::write_file($file,$json);
   return 1;

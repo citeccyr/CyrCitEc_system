@@ -1,0 +1,243 @@
+#!/usr/bin/python
+
+import os
+import os.path
+import re
+import paths
+#import common
+import subprocess
+import datetime
+import json
+import lxml.etree as etree
+
+import with_files
+
+#re_empty = re.compile("^\\s*$")
+
+dirs = paths.dirs
+files = paths.files
+urls = paths.urls
+
+xslt_dir = dirs['xslt']
+## to get discipline data
+discipline_xslt_fufi = xslt_dir + '/discipline.xslt.xml'
+discipline_sheet = etree.XSLT(etree.parse(discipline_xslt_fufi))
+## to build the discipline html list
+disciplines_xslt_fufi = xslt_dir + '/disciplines.xslt.xml'
+disciplines_sheet = etree.XSLT(etree.parse(disciplines_xslt_fufi))
+stats_sheet = etree.XSLT(etree.parse(paths.xslts['stats']))
+out_dir = dirs['group_out']
+disciplines_xml_fufi = out_dir + '/' + 'disciplines.xml'
+disciplines_html_fufi = out_dir + '/' + 'disciplines.html'
+discipline_data = {}
+
+
+def get_langs():
+    shell_get_alist = 'ssh cyrcitec@socionet.ru cat A-list'
+    re_alist_line = re.compile('\\s+')
+    get_alist = subprocess.Popen([shell_get_alist], shell=True,
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT)
+    out_alist, err_alist = get_alist.communicate()
+    lines_alist = out_alist.split(b'\n')    
+    langs = {}
+    for line in lines_alist:
+        print(line)
+        line = line.decode('utf-8')
+        matches = re_alist_line.split(line)
+        if(len(matches) == 1):
+            continue
+        if(len(matches) == 3):
+            langs[matches[0].lower()] = 'ru'
+            continue
+        langs[matches[0].lower()] = 'en'
+    return langs
+
+
+def detect_if_ru(series, langs):
+    for test in langs:
+        print("I test " + test + ' on ' + series)
+        if(langs[test] != 'ru'):
+            continue
+        if(series.startswith(test)):
+            return 1
+    return 0
+        
+
+def do_discipline(discipline):
+    print('discipline is ' + discipline)
+    stats_doc = etree.parse(files['stats'])
+    table_ele = stats_doc.getroot()
+    table_ele.set('discipline', discipline)    
+    for series in discipline_data:
+        ## ignore empty series
+        if(not series):
+            continue
+    series_eles = table_ele.xpath('//series')
+    for series_ele in series_eles:
+        handle = series_ele.get('id')
+        if(handle not in discipline_data):
+            series_ele.getparent().remove(series_ele)            
+            continue
+        if(not discipline_data[handle].count(discipline)):
+            series_ele.getparent().remove(series_ele)
+        else:
+            print(handle + ' is in discipline ' + discipline)
+        #print(etree.tostring(table_ele).decode('utf-8'))
+    stats_disciplines_file = files['stats']
+    end = len(stats_disciplines_file) - 4
+    xml_fufi = stats_disciplines_file[0:end] + '_' + discipline + '.xml'
+    with_files.install_xml(table_ele, xml_fufi)
+    print("I write " + xml_fufi)
+    ## a questionalble choice for the change date
+    mdate = with_files.mdate(xml_fufi, pretty=1)
+    pretty_date_param = etree.XSLT.strparam(mdate)
+    html_fufi = paths.dirs['group_out'] + '/' + discipline + '.html'
+    html = stats_sheet(table_ele, **{'date_pretty': pretty_date_param})
+    print("I write " + html_fufi)
+    with_files.install_html(html, html_fufi)
+
+    
+## gather data for disciplines 
+langs = get_langs()
+#print(langs)
+#quit()
+for found in os.walk(dirs['input']):
+    fufi = found[0]
+    if(fufi == dirs['input']):
+        continue
+    if(not os.path.isdir(fufi)):
+        continue
+    subdirs = found[1]
+    if(not len(subdirs)):
+        continue
+    archive = os.path.basename(fufi) 
+    if(archive == 'scn'):
+        continue
+    for subdir in subdirs:
+        base_target_url = archive + '/' + archive + subdir 
+        base_target_url = base_target_url 
+        target_file = fufi + '/' + archive +  subdir + '.xml'
+        if(not os.path.isfile(target_file)):            
+            continue
+        in_data = str(discipline_sheet(etree.parse(target_file)))
+        print("in_data for " + target_file + ": '" + in_data + "'")
+        parts = in_data.split(' ')
+        if(not parts[0]):
+            print("I skip " + in_data)
+            continue
+        series = str(parts[0]).lower()
+        if(not parts[1]):
+            print("auto")
+            if(detect_if_ru(series, langs)):
+                print('I detected ru')
+                target = ['ekonomika']
+            else:
+                print('I detected en')
+                target = ['economics']        
+        else:
+            print("no auto, target is " + str(parts[1:]))
+            target = parts[1:]
+        ## one special case
+        if(target == ['экономика']):
+            target = ['ekonomika']
+        ## if target is economics, run detection again
+        if(target == ['economics']):
+            if(detect_if_ru(series, langs)):
+                print('I redetected ru')
+                target = ['ekonomika']
+            else:
+                print('I redetected en')
+                target = ['economics']        
+        print('target is ' + str(target))
+        discipline_data[series] = target
+
+with open(files['disciplines'], 'w') as outfile:
+    json.dump(discipline_data, outfile)
+print("I wrote " + files['disciplines'])
+
+count_disciplines = {}
+for series in discipline_data:
+    for discipline in discipline_data[series]:
+        if(discipline  not in count_disciplines):
+            count_disciplines[discipline] = 1
+            continue
+        count_disciplines[discipline] = count_disciplines[discipline] + 1
+count_disciplines_sorted = sorted(count_disciplines.items(),
+                                  key=lambda t: t[1])
+count_disciplines_sorted.reverse()
+
+print(count_disciplines_sorted[0])
+
+disciplines_ele = etree.Element('disciplines')
+today = datetime.datetime.today().strftime('%Y-%m-%d')
+disciplines_ele.set('date', today)
+for disc_count in count_disciplines_sorted:
+    discipline = disc_count[0]
+    if(not discipline):
+        continue
+    count = str(disc_count[1])
+    print(type(count))
+    discipline_ele = etree.Element('discipline')
+    discipline_ele.set('count', count)
+    discipline_ele.set('id', discipline)
+    discipline_ele.text = discipline.capitalize()
+    disciplines_ele.append(discipline_ele)
+
+print(disciplines_xml_fufi)
+with_files.install_xml(disciplines_ele, disciplines_xml_fufi)
+html = disciplines_sheet(disciplines_ele)
+print("I write " + disciplines_html_fufi)
+with_files.install_html(html, disciplines_html_fufi)
+
+## now we do the disciplines
+for disc_count in count_disciplines_sorted:
+    discipline = disc_count[0]
+    do_discipline(discipline)
+
+quit()
+
+#!/usr/bin/python3.7
+
+#import subprocess
+#import re
+import json
+import lxml.etree as etree
+
+## local imports 
+import paths
+import with_files
+
+files = paths.files
+
+
+
+#print(files['disciplines'])
+discipline_data = with_files.load(files['disciplines'])
+
+#print(discipline_data)
+
+  
+
+## gather groups from XSLT
+xslt_dir = paths.dirs['xslt']
+group_index_xslt_fufi = xslt_dir + '/groups_index.xslt.xml'
+group_index_doc = etree.parse(group_index_xslt_fufi)
+print(type(group_index_doc))
+ns = {}
+ns['x'] = "http://www.w3.org/1999/XSL/Transform"
+ns['h'] = "http://www.w3.org/1999/xhtml"
+
+## nos/nosdgqoei.xml:  <Code>economics</Code>
+#known_disciplines = group_index_doc.xpath("//h:a[@class='discipline']", namespaces=ns)
+# known_disciplines = group_index_doc.xpath("//h:a", namespaces=ns)
+a_elements = group_index_doc.xpath("//h:a", namespaces=ns)
+## we can't make it in the xpath
+for a_element in a_elements:
+    if(not a_element.get('class') == 'discipline'):
+        continue
+    href = a_element.get('href')
+    ## take the .html out_dict
+    discipline = href[:-5]
+    do_discipline(discipline)
+

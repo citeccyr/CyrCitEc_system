@@ -1,0 +1,7 @@
+#!/bin/bash
+
+
+ssh cec@evstu /home/cec/perl/vic_group_get.pl
+
+rsync -va /opt/evstu/vol/home/cec/tmp/data/RePEc/ /home/cec/var/opt/input
+rsync -va /opt/evstu/vol/home/cec/tmp/data/spz/ /home/cec/var/opt/input

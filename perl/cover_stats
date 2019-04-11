@@ -55,7 +55,9 @@ if(not &Cec::Common::isatty()) {
 
 my $pretty_today=&Cec::Dates::pretty_today;
 
+my $handles_file="$series_stats_dir/handles.json";
 my $records_file="$series_stats_dir/records.json";
+my $recika_file="$series_stats_dir/recika.json";
 my $futli_file="$series_stats_dir/futli.json";
 my $warcs_file="$series_stats_dir/warcs.json";
 my $pdf_warcs_file="$series_stats_dir/pdf_warcs.json";
@@ -79,6 +81,7 @@ my $f;
 $f->{'records'} = sub {
   my @founds=`find $input_dir -type f -name '*.xml'`;
   my $h;
+  my $r;
   foreach my $found (shuffle @founds) {
     chomp $found;
     my $source;
@@ -93,9 +96,12 @@ $f->{'records'} = sub {
     $handle=lc($handle);
     $h->{$handle}=1;
     my $series=&series($handle) // next;
+    ## save the files to handles
+    $r->{$handle}=$found;
     $t->{$series}->{'records'}++;
   }
   &Lafka::Json::save($h,"$records_file");
+  &Lafka::Json::save($r,"$handles_file");
 };
 
 $f->{'has_futli'} = sub {
@@ -183,6 +189,32 @@ $f->{'json'} = sub {
     $t->{$series}->{'json'}++;
   }
   &Lafka::Json::save($h,"$json_file");
+};
+
+$f->{'recika'} = sub {
+  my @founds=`find $peren_dir -type f -name 'summary.xml'`;
+  my $h;
+  my $i_have;
+  foreach my $found (sort  @founds) {
+    chomp $found;
+    my $dir=dirname($found);
+    $dir=~s|$peren_dir/*|| or die;
+    my $papid=&{$Cidig::Ris::file2id->{'spz'}}($dir);
+    my $handle=lc($papid);
+    $h->{$handle}=1;
+    if($i_have->{$handle}) {
+    #  my $old=$h->{$handle};
+    #  print "JSON repeats the handle $handle, run ls -lt $found $old\n";
+    #  #unlink $old;
+      next;
+    }
+    $i_have->{$handle}=$found;
+    $h->{$handle}=$found;
+    #my $series=&series(lc($handle));
+    my $series=&series($handle) // next;
+    $t->{$series}->{'recika'}++;
+  }
+  &Lafka::Json::save($h,"$recika_file");
 };
 
 ## new recitex function based on stats script
@@ -278,7 +310,7 @@ sub calculate {
   if($opt_i) {
     $t=&Lafka::Json::load($out_file);
   }
-  my @stacks=('records','has_futli','warcs','json','reci');
+  my @stacks=('records','has_futli','warcs','json','recika', 'reci');
   # my @stacks=('records');
   foreach my $run (shuffle (@stacks)) {
     if($opt_o and $run ne $opt_o) {
@@ -419,15 +451,18 @@ sub missing {
   my $warcs=&Lafka::Json::load($warcs_file);
   my $pdf_warcs=&Lafka::Json::load($pdf_warcs_file);
   my $json=&Lafka::Json::load($json_file);
+  my $recika=&Lafka::Json::load($recika_file);
   my $all=&series_out($records);
   my $r_f=&series_out(&subtract($records,$futli,'do_delete'));
   my $f_w=&series_out(&subtract($futli,$warcs,'do_delete'));
   my $w_p=&series_out(&subtract($warcs,$pdf_warcs,'do_delete'));
   my $p_f=&series_out(&subtract($pdf_warcs,$json,'do_delete'));
+  my $r_j=&series_out(&subtract($json,$recika,'do_delete'));
   $miss->{'has_futli'}=&to_docs($r_f,'has_futli');
   $miss->{'warcs'}=&to_docs($f_w,'warcs');
   $miss->{'pdf_warcs'}=&to_docs($w_p,'pdf_warcs');
   $miss->{'json'}=&to_docs($p_f,'json');
+  $miss->{'recika'}=&to_docs($r_j,'recika');
   ## missing from nothing
   $miss->{'_'}=&to_docs($all,'_');
   return $miss;
@@ -469,6 +504,7 @@ sub to_docs {
 sub build_missing {
   foreach my $file (`find $missing_dir -type f -name '*.xml'`) {
     chomp($file);
+    print "I found $file\n";
     &html_missing_file($file);
   }
 }
@@ -507,7 +543,8 @@ sub show {
   my $miss=&missing();
   &build_missing();
   my $doc=&cover_doc($in,$miss);
-  $doc->toFile('/tmp/cover.xml');
+  $doc=&remove_series_with_no_records($doc);
+  $doc->toFile($Cec::Paths::files->{'stats'});
   my $prevpath=&Cec::Past::get_prevpath($out_file);
   my $params;
   if($prevpath) {
@@ -520,6 +557,16 @@ sub show {
     print $out;
   }
   &Cec::Xml::install_doc($out,$files->{'stats_output'});
+}
+
+sub remove_series_with_no_records {
+  my $doc=shift;
+  foreach my $series_ele ($doc->getElementsByTagName('series')) {
+    if(not scalar $series_ele->getElementsByTagName('records')) {
+      $series_ele->parentNode->removeChild($series_ele);
+    }
+  }
+  return $doc;
 }
 
 # sub show_text_old {

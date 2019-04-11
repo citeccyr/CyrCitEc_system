@@ -29,7 +29,7 @@
       </a>
       <xsl:text>.</xsl:text>
       <xsl:if test="string-length($date_pretty)">
-	<xsl:text>.&#10;It was last changed on&#10;</xsl:text>
+	<xsl:text>&#10;It was last changed on&#10;</xsl:text>
 	<xsl:value-of select="$date_pretty"/>
 	<xsl:text>.&#10;</xsl:text>
       </xsl:if>

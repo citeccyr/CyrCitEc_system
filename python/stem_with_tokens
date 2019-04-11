@@ -1,0 +1,41 @@
+#!/usr/bin/python3
+
+
+import os
+import pymorphy2
+import re
+import sys
+
+
+# f = open('/home/cec/var/opt/word2vec/raw.txt', 'r')
+name=os.path.basename(sys.argv[1])
+
+infile='/home/cec/var/opt/word2vec/'+name+'_raw.txt'
+# stem should be the exectuted file's name
+outfile='/home/cec/var/opt/word2vec/'+name+'_stem.txt'
+out=open(outfile, 'w')
+
+
+
+# line=f.readline()
+morph=pymorphy2.MorphAnalyzer() # Создает объект морфоанализатора и загружет словарь.
+
+def stem(text, needPos=None):
+  tokens=text.split()
+  words=[a[0] for a in re.findall("([А-ЯЁа-яё]+(-[А-ЯЁа-яё]+)*)", text)]
+  reswords=[]
+  ## the identifier tokens
+  s=tokens[0] + ' ' + tokens[1] + ' ' + tokens[2] + ' ' + tokens[3] + ' '
+  for w in words:
+    #print(w)
+    wordform=morph.parse(w)[0]
+    s+=str(wordform.normal_form)
+    s+=' '
+  return s
+
+with open(infile,'r') as f:
+  for line in f:
+    outline=stem(line) + "\n"
+    #print(outline)
+    out.write(outline)
+out.close

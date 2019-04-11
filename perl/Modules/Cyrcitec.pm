@@ -6,7 +6,9 @@ use MyXMLParser;
 use Data::Dumper;
 use Template;
 use Cec::Paths;
-
+use Template::Directive; 
+$Template::Directive::WHILE_MAX=100000;
+ 
 sub GetHByCode {
   my $code = $_[0];
 }
@@ -22,6 +24,7 @@ sub parseTemplate
 {
   #my $data = $_[0];
   my ($file, $vars) = @_;
+  
   my $tt = Template->new({
     INCLUDE_PATH => '../templates',
     INTERPOLATE  => 1,

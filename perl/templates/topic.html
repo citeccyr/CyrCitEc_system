@@ -18,13 +18,27 @@
 
 Total topics: [% max %]
 
-<h3>Frequency/importance of topic's words</h3>
-<table style="width: 400px">
- <tr><th>topic's word</th><th>freq</th><th>tf_idf</th></tr>
-[% FOREACH itm IN freqs %]
-   <tr><td>[% itm.name %]</td><td style="text-align: center">[% itm.freq %]</td><td style="text-align: center">[% itm.tf_idf %]</td></tr>
-[% END %]
+<table>
+<tr><td style="vertical-align: top">
+  <h3>Frequency/importance of topic's words</h3>
+  <table style="width: 300px">
+   <tr><th>topic's word</th><th>freq</th><th>tf_idf</th></tr>
+  [% FOREACH itm IN freqs %]
+     <tr><td>[% itm.name %]</td><td style="text-align: center">[% itm.freq %]</td><td style="text-align: center">[% itm.tf_idf %]</td></tr>
+  [% END %]
+  </table>
+</td><td style="vertical-align: top; padding-left: 20px">
+  <h3>Frequency of topics by contexts</h3>
+  <table style="width: 500px">
+   <tr><th>topic</th><th>num</th><th>aprob</th><th>std</th></tr>
+  [% FOREACH itm IN topics %]
+     <tr><td>[% itm.topic %]</td><td style="text-align: center">[% itm.number %]</td><td style="text-align: center">[% itm.probability_average %]</td><td style="text-align: center">[% itm.probability_std %]</td></tr>
+  [% END %]
+  </table>
+ 
+</td></tr>
 </table>
+
 
 <h3>Topics by citation contexts</h3>
 

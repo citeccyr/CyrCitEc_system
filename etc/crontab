@@ -1,18 +1,33 @@
 SHELL=/bin/bash
 PERL5LIB=/home/cec/lib/perl:/home/cec/git/ParsCit/lib:/home/cec/usr/share/perl
-
+PYTHONPATH=/home/cec/opt/python:/home/cec/.local/lib/python3.6/site-packages/:/home/cec//lib/python
 ## new index page for statistics
 1 0 * * *  ~/perl/save_stats -i
 
+
+##
+#38 06 * * *  date > /tmp/date
+06 05 * * * ~/bin/daily_update
+12 05 * * * ~/bin/update_data
+
+## export to evstu
+26 * * * * ~/bin/export_to_evstu
+
+06 06 * * * ~/python/vic_group_data.py
+
+28 * * * *  ~/python/group.py > /tmp/group.py.out
+
 # # commented out for development work
 # # ## general harvest on a random base
-# # 05 * * * * ~/perl/spz_to_lafka -v 400 > ~/var/log/spz2l_0.log 2> ~/var/log/spz2l_0.err ;
-# # 15 * * * * ~/perl/spz_to_lafka -vn 400 > ~/var/log/spz2l_1.log 2> ~/var/log/spz2l_1.err ;
-# # 25 * * * * ~/perl/spz_to_lafka -vp 400 > ~/var/log/spz2l_2.log 2> ~/var/log/spz2l_2.err ;
-# # 35 * * * * ~/perl/spz_to_lafka -v 400 > ~/var/log/spz2l_3.log 2> ~/var/log/spz2l_3.err ;
-# # 45 * * * * ~/perl/spz_to_lafka -v 400 > ~/var/log/spz2l_4.log 2> ~/var/log/spz2l_4.err ;
-# # 55 * * * * ~/perl/spz_to_lafka -vp 400 > ~/var/log/spz2l_5.log 2> ~/var/log/spz2l_5.err ;
+05 * * * * ~/perl/spz_to_lafka -v 400 > ~/var/log/spz2l_0.log 2> ~/var/log/spz2l_0.err ;
+15 * * * * ~/perl/spz_to_lafka -vn 400 > ~/var/log/spz2l_1.log 2> ~/var/log/spz2l_1.err ;
+25 * * * * ~/perl/spz_to_lafka -vp 400 > ~/var/log/spz2l_2.log 2> ~/var/log/spz2l_2.err ;
+35 * * * * ~/perl/spz_to_lafka -v 400 > ~/var/log/spz2l_3.log 2> ~/var/log/spz2l_3.err ;
+45 * * * * ~/perl/spz_to_lafka -v 400 > ~/var/log/spz2l_4.log 2> ~/var/log/spz2l_4.err ;
+55 * * * * ~/perl/spz_to_lafka -vp 400 > ~/var/log/spz2l_5.log 2> ~/var/log/spz2l_5.err ;
 
+## kill +300 runtime recitexs
+# */10 * * * *  kill -9 $(ps -eo comm,pid,etimes | awk '/recitex/ {if ($3 > 300) { print $2}}') >> /tmp/kill_hanging_recitex.log  2>> /tmp/kill_hanging_recitex.err 
 
 ## bada-based harvest, eight days ago
 #59 13 * * * ~/perl/spz_to_lafka -a 9
@@ -20,11 +35,13 @@ PERL5LIB=/home/cec/lib/perl:/home/cec/git/ParsCit/lib:/home/cec/usr/share/perl
 ## bada-based harvest, yesterday
 #59 01 * * * ~/perl/spz_to_lafka -a 1
 
+20,0,4 20 * * * ~/perl/fire_up_recitex >> /tmp/fur.log
+
 ##
-08 20 * * * ~/bin/daily_update
+58 05 * * * echo foo > /tmp/test ; ~/bin/daily_update
 
 ## also fires up bada indexing
-04 07,19 * * *  ~/bin/get_vicwork
+04 07,19 * * *  ~/bin/get_vicwork ; ~/python/get_vicwork_via_rsyncd.py
 
 ## kill old recitex
 #*/10 * * * * ~/perl/unblock_recitex
@@ -39,3 +56,8 @@ PERL5LIB=/home/cec/lib/perl:/home/cec/git/ParsCit/lib:/home/cec/usr/share/perl
 
 ## clear old warcs
 3 3 * * * find /tmp/ -user cec -name '*.warc' -mtime +1  -delete 2> /dev/null
+
+## clear old tmp
+34 5 * * * find /tmp -name '*.log' -mtime +5 -delete 2> /dev/null
+36 5 * * * find /tmp -name '*.err' -mtime +5 -delete 2> /dev/null
+

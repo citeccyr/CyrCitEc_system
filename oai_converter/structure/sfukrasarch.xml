@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<root>
+<Template-Type>archive</Template-Type>
+<Handle>ranepa:sfukras</Handle>
+<Name>Архив электронных ресурсов СФУ</Name>
+<Maintainer>
+<Name>Алина Жук</Name>
+<Email>zhuk-ao@ranepa.ru</Email>
+</Maintainer>
+<Provider>
+<Name>Socionet</Name>
+<Homepage>http://socionet.ru/</Homepage>
+</Provider>
+<Description>Журналы Сибирского Федерального Университета.</Description>
+<URL>http://elib.sfu-kras.ru/</URL>
+<Date>
+  <Creation>2019-04-06</Creation>
+</Date>
+</root>

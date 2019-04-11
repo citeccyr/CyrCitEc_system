@@ -17,6 +17,7 @@ use List::Util qw(shuffle);
 use JSON::XS;
 
 ## globals needed for finding most recent files
+my $last={};
 my $last_time=0;
 my $last_file='';
 
@@ -228,13 +229,17 @@ sub mtime {
 #
 sub find_most_recent_time_in_directory {
   my $directory=shift;
+  if(not $last->{'time'}) {
+    $last->{'time'}=0;
+  }
   foreach my $file (`ls $directory`) {
     chomp $file;
     my $full_file="$directory/$file";
     if(-f $full_file) {
       my $mtime=&mtime($full_file);
-      if($last_time < $mtime) {
-        $last_time=$mtime;
+      if($last->{'time'} < $mtime) {
+        $last->{'time'}=$mtime;
+	$last->{'file'}=$full_file;
         next;
       }
     }
@@ -243,6 +248,36 @@ sub find_most_recent_time_in_directory {
     }
   }
   return $last_time;
+}
+
+
+sub find_most_recent_in_directory {
+  my $directory=shift;
+  my $out={};
+  if(not $last->{'file'}) {
+    $last->{'file'}=$directory;
+  }
+  if(not $last->{'time'}) {
+    $last->{'time'}=1;
+  }
+  foreach my $file (`ls $directory`) {
+    chomp $file;
+    my $full_file="$directory/$file";
+    if(-f $full_file) {
+      my $mtime=&mtime($full_file);
+      if($last->{'time'} < $mtime) {
+        $last->{'time'}=$mtime;
+	if(-f $full_file) {
+	  $last->{'file'}=$full_file;
+	}
+	next;
+      }
+    }
+    if(-d $full_file) {
+      &find_most_recent_time_in_directory($full_file);
+    }
+  }
+  return $last;
 }
 
 ##

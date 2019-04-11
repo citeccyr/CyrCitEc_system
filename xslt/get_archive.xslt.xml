@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<stylesheet version="1.0"
+            xmlns="http://www.w3.org/1999/XSL/Transform">
+  <output encoding="utf-8"
+          omit-xml-declaration="yes"
+          method="text"
+          media-type="text/plain"/>
+  <template match="text()"/>
+  <template match="/root">
+    <variable name="handle">
+      <value-of select="./Handle"/>
+    </variable>
+    <variable name="after_first"
+	      select="substring-after($handle,':')"/>
+    <value-of select="substring-before($after_first,':')"/>
+  </template>
+</stylesheet>

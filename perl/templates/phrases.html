@@ -55,7 +55,7 @@ function showref(myid, code, w) {
     apdlg.show(myid);
 
     \$('#addparam-dlg .x-tabs-body').html("<div style='text-align:center'><img src='/analysis/images/wait.gif' style='margin-top: 100px;' class='loading'></div>");
-   \$.get('http://cirtec.ranepa.ru/analysis/spadist/cgi/phrases.cgi?phrase='+code+'&w=' + w, function(data) {
+   \$.get('[% self_url %]/analysis/spadist/cgi/phrases.cgi?phrase='+code+'&w=' + w[% IF conf %]+ '&c=[% conf %]'[% END %], function(data) {
       \$('#addparam-dlg .x-tabs-body').html(data);
    })
 

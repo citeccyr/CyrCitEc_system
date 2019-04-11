@@ -1,0 +1,40 @@
+#!/usr/bin/python
+
+import os
+import os.path
+#import re
+import paths
+import common
+
+#re_empty = re.compile("^\\s*$")
+
+dirs = paths.dirs
+files = paths.files
+urls = paths.urls
+
+for found in os.walk(dirs['input']):
+    fufi = found[0]
+    if(fufi == dirs['input']):
+        continue
+    if(not os.path.isdir(fufi)):
+        continue
+    subdirs = found[1]
+    if(not len(subdirs)):
+        continue
+    archive = os.path.basename(fufi) 
+    if(archive == 'scn'):
+        continue
+    for subdir in subdirs:
+        base_target_url = archive + '/' + archive + subdir 
+        base_target_url = base_target_url 
+        target_file = fufi + '/' + archive +  subdir + '.xml'
+        if(os.path.isfile(target_file)):
+            print('I found ' + target_file)
+            continue
+        for ris in ('repec', 'spz'):
+            target_url = paths.hosts['vicsync'] + '/' + ris + '/' \
+                   + base_target_url
+            target_url = 'rsync://' + target_url + '.xml'
+            print('rsync -va ' + target_url + ' ' + target_file)
+            common.rsync(target_url, target_file)
+        

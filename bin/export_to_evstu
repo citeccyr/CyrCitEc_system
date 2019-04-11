@@ -1,0 +1,34 @@
+#!/bin/bash
+
+killall rsync
+rm -f /tmp/rsync*
+
+R="rsync -qaHAXx --numeric-ids"
+EVSTU=/opt/evstu/vol/home/cec
+PEREN=opt/peren
+PUSTA=public_html/stats
+PUSCUR=public_html/opt
+TODAY=`date -I`
+YESTERDAY=`date -I -d 'yesterday'`
+TWO_DAYS_AGO=`date -I -d '2 days ago'`
+
+#$R ~/$PEREN/RePEc/ $EVSTU/$PEREN/RePEc # > /tmp/rsync_peren_repec 
+#$R ~/$PEREN/spz/ $EVSTU/$PEREN/spz > /tmp/rsync_peren_spz
+## export all of the peren
+$R ~/$PEREN/ $EVSTU/$PEREN > /tmp/rsync_peren_spz 
+$R ~/$PUSCUR/ $EVSTU/$PUSCUR > /tmp/rsync_current
+REMOTE_TODAY_DIR=$EVSTU/$PUSTA/$TODAY
+[ -d  $REMOTE_TODAY_DIR ] || mkdir $REMOTE_TODAY_DIR
+LOCAL_TODAY_DIR=$EVSTU/$PUSTA/$TODAY
+[ -d  $LOCAL_TODAY_DIR ] || mkdir $LOCAL_TODAY_DIR
+$R ~/$PUSTA/$TODAY/ $EVSTU/$PUSTA/$TODAY > /tmp/rsync_0_day_ago 
+$R ~/$PUSTA/$YESTERDAY/ $EVSTU/$PUSTA/$YESTERDAY > /tmp/rsync_1_day_ago 
+$R ~/$PUSTA/$TWO_DAYS_AGO/ $EVSTU/$PUSTA/$TWO_DAYS_AGO > /tmp/rsync_2_day_ago 
+
+exit
+
+
+
+
+
+

@@ -17,6 +17,7 @@ use CGI;
 use URI::Escape;
 use Encode;
 use BundleXml;
+use BundleConfig;
 
 #my $files=$Cec::Paths::files;
 my $dirs=$Cec::Paths::dirs;
@@ -32,48 +33,42 @@ print get_topic() if $que->param('topic');
 sub get_topic
 {
   my $code = $que->param('topic');
-  my $json = &File::Slurper::read_text($dirs->{'www_w2v'}.'/topic_output.json');
-  my $jdata = JSON::XS->new->decode ($json); # = decode_json($json_t);
-  my $hs = $jdata->{$code};
-  my @data;
-#me($hs);
+  my $type = $que->param('type') || 'analysis';
+  my $c = $que->param('c');
+  	my $conf = BundleConfig->new($c);
+  my $dir = $c ? $conf->{'bundles_xml'} : $dirs->{$type.'_xml'};
+  my $bndl = new BundleXml($code, {'dir_xml' => $dir});
 
-  my $bndl = new BundleXml($code);
   my $xhs = $bndl->GetHash();
-
-#  my $xmlf = $dirs->{'analysis_xml'}.'/'.$code.'.xml';
- # my $xmlt = &File::Slurper::read_text($xmlf);
- # my $parser = new MyXMLParser('content' => $xmlt, 'encoding' => 'cp1251');
- # my $xhs = $parser->GetHashFromXmlFile();
-
   my $title = $bndl->GetTitle();
+  my @data; my $hs;
 
-  for(my $i = 0; $i < @{$hs}; $i++) {
-    for(my $j = 0; $j < @{$hs->[$i]}; $j++) {
+  my $json = &File::Slurper::read_text($conf->{'www_w2v_json'} ? $conf->{'www_w2v_json'} : $dirs->{$type}.'/Word2Vec/topic_output.json'); # _v_2  $dirs->{'www_w2v'}.
+  my $jdata = JSON::XS->new->decode ($json);
+#print Dumper($jdata);
+  my $hs2 = $jdata->{$code};
+ # me($hs2->{'contexts'});
 
-     #####      my $rs = get_by_ref_key($xhs, $hs->[$i]->[$j]);
-
-      my @parts = split /_/, $hs->[$i]->[$j]->{'ref_key'};
-      if($hs->[$i]->[$j]->{'ref_key'} =~ /^([^\n]+)_([^_]+)_([^_]+)$/) { @parts = ($1, $2, $3); }
+    for(my $j = 0; $j < @{$hs2->{'contexts'}}; $j++) {
+      my @parts = split /_/, $hs2->{'contexts'}->[$j]->{'ref_key'};
+      if($hs2->{'contexts'}->[$j]->{'ref_key'} =~ /^([^\n]+)_([^_]+)_([^_]+)$/) { @parts = ($1, $2, $3); }
       my $rs = $bndl->GetIntextRef(@parts);
 
-      if($rs->{'citer'}) { $hs->[$i]->[$j]->{'author'} = $rs->{'citer'}->{'author'}->[0]; $hs->[$i]->[$j]->{'title'} = $rs->{'citer'}->{'title'}->[0]; $hs->[$i]->[$j]->{'year'} = $rs->{'citer'}->{'year'}->[0]; }
-      if($rs->{'intextref'}) { $hs->[$i]->[$j]->{'Suffix'} = $rs->{'intextref'}->{'Suffix'}->[0]; $hs->[$i]->[$j]->{'Prefix'} = $rs->{'intextref'}->{'Prefix'}->[0]; }
-      #if(!$title && $rs->{'title'}) { $title = $rs->{'title'}; }
-      $hs->[$i]->[$j]->{'handle'} = $rs->{'handle'};
-      #$hs->[$i]->[$j]->{'citer'} = $rs->{'citer'};
-      #$hs->[$i]->[$j]->{'intextref'} = $rs->{'intextref'};
-      push @data, $hs->[$i]->[$j];
+      if($rs->{'citer'}) { $hs2->{'contexts'}->[$j]->{'author'} = $rs->{'citer'}->{'author'}->[0]; $hs2->{'contexts'}->[$j]->{'title'} = $rs->{'citer'}->{'title'}->[0]; $hs2->{'contexts'}->[$j]->{'year'} = $rs->{'citer'}->{'year'}->[0]; }
+      if($rs->{'intextref'}) { $hs2->{'contexts'}->[$j]->{'Suffix'} = $rs->{'intextref'}->{'Suffix'}->[0]; $hs2->{'contexts'}->[$j]->{'Prefix'} = $rs->{'intextref'}->{'Prefix'}->[0]; }
+      $hs2->{'contexts'}->[$j]->{'handle'} = $rs->{'handle'};
+      push @data, $hs2->{'contexts'}->[$j];
     }
-  }
 
+#me(\@data);
   my $noref = get_other_refs($xhs);
-#me(\@data, 1);
-
-  $json = &File::Slurper::read_text($dirs->{'www_w2v'}.'/topics_freq.json');
+#me($dirs, 1);
+#me($dirs->{'www_w2v'}.'/topics_freq.json');
+  $json = &File::Slurper::read_text($conf->{'www_freq_json'} ? $conf->{'www_freq_json'} : $dirs->{$type}.'/Word2Vec/topics_freq.json');
   $jdata = JSON::XS->new->decode ($json);
   $hs = $jdata->{$code};
-  #me($hs);
+#  me($hs);
+
 
   my $shs;
   foreach my $name (keys %$hs) {
@@ -93,7 +88,7 @@ sub get_topic
   #}
 #me(\%shs);
   
-  Cyrcitec::parseTemplate('topic.html',  { data => \@data, freqs => \@arr, title => $title, noref => $noref } );
+  Cyrcitec::parseTemplate('topic.html',  { data => \@data, freqs => \@arr, title => $title, noref => $noref , topics => $hs2->{'topics'}} );
 }
 
 sub __get__by_ref_k__ey
@@ -159,7 +154,10 @@ sub get_other_refs {
 sub get_phrase
 {
   my $code = $que->param('phrase');
-  my $json = read_text($dirs->{'www_w2v'}.'/2-3-4-5-6_grams_v3.json');
+  my $type = $que->param('type') || 'analysis';
+	my $c = $que->param('c');
+  	my $conf = BundleConfig->new($c);
+  my $json = read_text($conf->{'www_w2v_grams_json'} ? $conf->{'www_w2v_grams_json'} : $dirs->{$type}.'/Word2Vec/grams_2018_12_03.json'); #  2-3-4-5-6_grams_v3.json');
 
 #  my $json = &File::Slurper::read_text($dirs->{'www_w2v'}.'/2-3-4-5-6_grams_v3.json'); #3_grams_v2.json');
 #  my $jdata = decode_json($json);
@@ -169,7 +167,7 @@ sub get_phrase
   my $jdata = decode_json($json);
   my $hs = $jdata->{$code};
 
-  Cyrcitec::parseTemplate('phrases.html',  { data => $hs, code => $code } );
+  Cyrcitec::parseTemplate('phrases.html',  { data => $hs, code => $code, self_url => $conf->{'self_url'}, conf => $conf->{'conf'} } );
 }
 
 sub get_phase {
@@ -189,13 +187,17 @@ sub get_ref_phrases
 {
   my $code = $que->param('phrase');
   my $w = $que->param('w');
+  my $c = $que->param('c');
+  	my $conf = BundleConfig->new($c);
 #print $w;
 #  my $rh = get_query_params();
 #  $w = ''.$rh->{'w'};
 #$w = utf8::encode($w);
 $w = decode('utf8', $w);
 
-  my $xmlf = $dirs->{'analysis_xml'}.'/'.$code.'.xml';
+	my $dir = $conf->{'conf'} ? $conf->{'bundles_xml'} : $dirs->{'analysis_xml'};
+  my $xmlf = $dir.'/'.$code.'.xml';
+  
   my $xmlt = &File::Slurper::read_text($xmlf);
   my $parser = new MyXMLParser('content' => $xmlt, 'encoding' => 'cp1251');
   my $hs = $parser->GetHashFromXmlFile();
@@ -206,6 +208,7 @@ $w = decode('utf8', $w);
   my $t = @arr;
   #print "===".$t."\n";
   my $res;
+ 
   foreach my $rf (@arr) 
   {
 #print ( $rf->{'found_in'}."\n") ;

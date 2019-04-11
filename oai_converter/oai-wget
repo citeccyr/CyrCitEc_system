@@ -1,0 +1,40 @@
+#!/usr/bin/perl
+
+$site = shift;
+$dir = shift or die <<EE;
+  usage: oai-wget site_url dst_dir [from [until]]
+  from, until: yyyy-mm-dd
+EE
+$site =~ m,^https?://[-./?&=\w]+$, or die "bad url";
+$dir =~ /[^-\w.,]/ and die "bad dir";
+$from = shift;
+$until = shift;
+die "bad from" if $from && $from !~ /^\d{4}-\d{2}-\d{2}$/;
+die "bad until" if $until && $until !~ /^\d{4}-\d{2}-\d{2}$/;
+mkdir $dir;
+
+$timeint = "\\&from=$from" if $from;
+$timeint .= "\\&until=$until" if $until;
+
+$mdp = "oai_dc";
+$mdp = $1 if $site =~ s/metadataPrefix=(\w*)//;
+$set = "\\&set=$1" if $site =~   s/set=(\w*)//;
+$site =~ s/[?&]+$//;
+$rst = "$set\\&metadataPrefix=$mdp$timeint";
+$fn = 0;
+$site .= "\\?verb=ListRecords";
+# print "$site$rst\n"; exit;
+while( 1 ) {
+	$file = sprintf "%06d.xml", $fn;
+print   "wget -O - $site$rst > $dir/$file\n";
+# exit;
+#        system "wget -O - $site$rst > $dir/$file 2> /dev/null; echo $?";
+	system "wget -O - $site$rst > $dir/$file             ; echo $?";
+
+	open F, "$dir/$file";
+	undef $/;
+	$_ = <F>;
+	last unless m,>([^><]+?)</resumptionToken>,s;
+	$rst = "\\&resumptionToken=$1";
+	++ $fn;
+}

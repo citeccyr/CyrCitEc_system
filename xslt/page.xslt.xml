@@ -19,6 +19,7 @@
       <xsl:text>&#10;</xsl:text>
       <head>
         <xsl:text>&#10;</xsl:text>
+	<link rel="stylesheet" href="/main.css"/>
         <title>
           <xsl:value-of select="$title"/>
         </title>

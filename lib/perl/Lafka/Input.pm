@@ -120,6 +120,10 @@ sub get_by_futli {
   ## for the moment, no check ...
   my $wget_shell=$Lafka::Paths::bins->{'wget'}.' '.$i->{'wget_args'};
   $wget_shell .= " --warc-file " . $i->{'file'}->{'temp_wget'};
+  if($futli=~m|sciencedirect|) {
+    ## we won't get anything there anyway
+    $wget_shell .= " --timeout 10";
+  }
   $wget_shell .= " --warc-header \"Paper-Id: $papid\"";
   $wget_shell .= " --warc-header \"Futli: $futli\"";
   ## if this is a html-based (secondary) download
@@ -174,6 +178,10 @@ sub should_i_download {
   my $warc_age=-M $target_file // 0;
   my $too_young=$i->{'conf'}->{'warc_too_young_in_days'}
     // confess "I need this defined here.";
+  ## 2019-02-15 add to overwiret the configu too_youngx
+  if(defined($i->{'do_young'})) {
+    $too_young=$i->{'do_young'};
+  }
   if(-f $target_file and $warc_age < $too_young) {
     if($i->{'verbose'}) {
       print "I skip $target_file, of age $warc_age\n";
@@ -208,7 +216,8 @@ sub should_i_download {
     if(not $to_sleep) {
       confess "I am not configured to wait, thus I refuse to download again from $hostname.";
     }
-    sleep $to_sleep;
+    ### sleep $to_sleep;
+    sleep 10;
   }
   return 1;
 }

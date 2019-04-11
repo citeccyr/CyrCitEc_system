@@ -7,8 +7,9 @@ use Carp qw(confess);
 use Cec::Paths;
 use Cidig::Peren;
 use Cec::Processes;
+use Krichel::Shoti;
 
-my $count=$ARGV[0] // 8;
+my $count=$ARGV[0] // 32;
 my $dirs=$Cec::Paths::dirs;
 my $files=$Cec::Paths::files;
 my $script=$files->{'apply_recitex_script'};
@@ -23,10 +24,12 @@ while(1) {
     exit;
   }
   print " yes\n";
+  Cec::Processes::kill_recent_duplicates('verbose');
   my $count_running=&Cec::Processes::count_running($script);
   print "I have $count_running processes running\n";
+  my $now=Krichel::Shoti::now();
   if($count_running < $count) {
-    my $s="nohup $script > /tmp/ar$count_running.log  2> /tmp/ar$count_running.err &";
+    my $s="nohup $script > /tmp/ar_$now.log  2> /tmp/ar_$now.err &";
     print "I run '$s'\n";
     system($s);
   }

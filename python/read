@@ -1,0 +1,60 @@
+#!/usr/bin/python3
+
+
+import re                          # Регулярные выражения.
+#import requests                    # Загрузка новостей с сайта.
+#from bs4 import BeautifulSoup      # Превращалка html в текст.
+import pymorphy2                   # Морфологический анализатор.
+#import datetime                    # Новости будем перебирать по дате.
+from collections import Counter    # Не считать же частоты самим.
+#import math                        # Корень квадратный.
+
+f = open('/home/cec/var/opt/word2vec/raw.txt', 'r')
+
+infile='/home/cec/var/opt/word2vec/raw.txt'
+outfile='/home/cec/var/opt/word2vec/stem.txt'
+
+out=open(outfile, 'a')
+
+line=f.readline()
+
+morph=pymorphy2.MorphAnalyzer() # Создает объект морфоанализатора и загружет словарь.
+#wordform=morph.parse('стекло')  # Проведем анализ слова "стекло"...
+
+#print(wordform)                 # ... и посмотрим на результат.
+# print(wordform.normal_form)
+#posConv={'ADJF':'_ADJ','NOUN':'_NOUN','VERB':'_VERB'}
+#def getArticleDictionary(text, needPos=None):
+#    words=[a[0] for a in re.findall("([А-ЯЁа-яё]+(-[А-ЯЁа-яё]+)*)", text)]
+#    reswords=[]
+#    for w in words:
+#        wordform=morph.parse(w)[0]
+#        if wordform.tag.POS in ['ADJF', 'NOUN', 'VERB']:
+#            if needPos!=None:
+#                reswords.append(wordform.normal_form+posConv[wordform.tag.POS])
+#            else:
+#                reswords.append(wordform.normal_form)#
+#
+#    return Counter(reswords)
+
+def stem(text, needPos=None):
+    tokens=text.split()
+    words=[a[0] for a in re.findall("([А-ЯЁа-яё]+(-[А-ЯЁа-яё]+)*)", text)]
+    reswords=[]
+    s=tokens[0] + ' ' + tokens[1] + ' ' + tokens[2] + ' ' + tokens[3] + ' '
+    for w in words:
+        wordform=morph.parse(w)[0]
+        s+=str(wordform.normal_form)
+        s+=' '
+    return s
+
+with open(infile) as f:
+  for line in f:
+    stem(line)
+    out.write(line)
+
+outfile.close
+
+#print(line)
+#stat1=stem(line, True)
+#print(stat1)

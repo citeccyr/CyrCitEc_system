@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+<Template-Type>series</Template-Type>
+ <Handle>ranepa:sfukras:humani</Handle>
+ <SeriesType>article</SeriesType>
+ <Name>Журнал Сибирского федерального университета. Гуманитарные науки. Journal of Siberian Federal University. Humanities &amp; Socioal Sciences</Name>
+ <Description>
+ </Description>
+ <Discipline>
+  <Code>othersocialscience</Code>
+ </Discipline>
+ <Publisher>
+  <Name>Сибирский федеральный университет//Siberian Federal University</Name>
+  <Email>bik@sfu-kras.ru</Email>
+  <Homepage>http://elib.sfu-kras.ru/</Homepage>
+ </Publisher>
+ <Maintainer>
+  <Name>Alina Zhuk</Name>
+  <Email>zhuk-ao@ranepa.ru</Email>
+ </Maintainer>
+ <Date>
+  <Creation>2019-04-06</Creation>
+ </Date>
+</root>

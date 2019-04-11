@@ -8,6 +8,9 @@ This will list what is actually being performed.
 
 * ~/bin/get_vicworks gets in input data from socionet.
 
+* oai_converter contains code written by Victor M. Lyapunov
+  that directly downloads and converts from an oai data provider. 
+
 * ~/perl/spz_to_lafka produces warc files with saved payloads from futlis.
   It takes a number of downloads to perform as an argument.
 
@@ -33,6 +36,7 @@ The following are performed in ~/bin/daily_update
 * ~/perl/stats produces other parts of the statistics
 
 * ~/perl/bundles is the main script for the analysis section
+
 
 
 ## Related repositories

@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Carp qw(confess);
+use Data::Dumper;
 use XML::LibXSLT;
 use XML::LibXML;
 
@@ -55,7 +56,7 @@ sub transform {
     $result=$x->{$name}->transform($in,%$params);
   }
   elsif(ref($name) eq 'XML::LibXSLT::StylesheetWrapper') {
-    $result=$name->transform($in);
+    $result=$name->transform($in,%$params);
   }
   else {
     confess "I don't know about" . ref($name);

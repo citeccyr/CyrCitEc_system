@@ -45,18 +45,24 @@
     </h2>
     <h2>
       <xsl:text>3. </xsl:text>
+      <a href="/groups/index.html">
+	<xsl:text>Groups</xsl:text>
+      </a>
+    </h2>
+        <h2>
+      <xsl:text>4. </xsl:text>
       <a href="/analysis/index.html">
 	<xsl:text>Analysis</xsl:text>
       </a>
     </h2>
     <h2>
-      <xsl:text>4. </xsl:text>
+      <xsl:text>5. </xsl:text>
       <a href="https://github.com/citeccyr/CyrCitEc_system">
 	<xsl:text>Software</xsl:text>
       </a>
     </h2>
     <h2>
-      <xsl:text>5. </xsl:text>
+      <xsl:text>6. </xsl:text>
       <a href="/past_statistics.html">
 	<xsl:text>Past statistics</xsl:text>
       </a>

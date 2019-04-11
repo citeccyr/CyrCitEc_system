@@ -22,6 +22,7 @@ my $prl_dir="/home/prl";
 my $prl_work_dir="$prl_dir/perl";
 my $git_dir=$dirs->{'rep'};
 my $bin_dir=$dirs->{'bin'};
+my $vic_dir=$dirs->{'vic'};
 
 my $do_test=0;
 
@@ -35,6 +36,9 @@ $to_repo->{"$bin_dir/daily_update"}=1;
 $to_repo->{"$bin_dir/get_vicwork"}=1;
 $to_repo->{"$bin_dir/update_models"}=1;
 $to_repo->{"$bin_dir/pdf-stream-cli"}=1;
+$to_repo->{"$bin_dir/export_to_evstu"}=1;
+$to_repo->{"$bin_dir/daily_update"}=1;
+$to_repo->{"$bin_dir/vic_group_get"}=1;
 
 my $to_parse=&look_for($crontab_file,'bin');
 $to_parse=&look_for($crontab_file,'perl',$to_parse);
@@ -48,7 +52,7 @@ system($s);
 foreach my $file (keys %{$to_parse->{'bin'}}) {
   $to_parse=&look_for($file,'perl',$to_parse);
 }
-
+ 
 ## find local library names
 my $local_libs;
 foreach my $lib (`ls $plib_dir`) {
@@ -72,6 +76,61 @@ foreach my $xslt_bana (`ls $xslt_dir`) {
   $to_repo->{$xslt_fufi}=1;
 }
 
+## I add all the python files. I will clean them manually
+my $python_dir=$dirs->{'python'};
+foreach my $python_bana (`ls $python_dir`) {
+  chomp $python_bana;
+  if($python_bana=~m|~$|) {
+    next;
+  }
+  my $python_fufi="$python_dir/$python_bana";
+  $to_repo->{$python_fufi}=1;
+}
+
+## I add all the pylib files. I will clean them manually
+my $pylib_dir=$dirs->{'pylib'};
+foreach my $pylib_bana (`ls $pylib_dir`) {
+  chomp $pylib_bana;
+  if($pylib_bana=~m|~$|) {
+    next;
+  }
+  if($pylib_bana eq '__pycache__') {
+    next;
+  }
+  my $pylib_fufi="$pylib_dir/$pylib_bana";
+  $to_repo->{$pylib_fufi}=1;
+}
+
+## export from oai_converter
+my $convert_dir=$dirs->{'oai_convert'};
+foreach my $bana (`ls $convert_dir`) {
+  chomp $bana;
+  my $fufi="$convert_dir/$bana";
+  ## skip directorise
+  if(-d $fufi) {
+    next;
+  }
+  ## skip non-excutable
+  if(not -x $fufi) {
+    next;
+  }
+  if($bana=~m|~$|) {
+    next;
+  }
+  $to_repo->{$fufi}=1;
+}
+
+## export from oai_converter
+my $struct_dir=$dirs->{'oai_structure'};
+foreach my $bana (`ls $struct_dir`) {
+  chomp $bana;
+  my $fufi="$struct_dir/$bana";
+  if(not $bana=~m|\.xml$|) {
+    next;
+  }
+  $to_repo->{$fufi}=1;
+}
+
 ## I add all the doc files. I will clean them manually
 my $doc_dir=$Cec::Paths::dirs->{'doc'};
 foreach my $doc_bana (`ls $doc_dir`) {
@@ -87,8 +146,12 @@ foreach my $doc_bana (`ls $doc_dir`) {
 
 foreach my $in_file (keys %{$to_repo}) {
   my $out_file=$in_file;
+  ## vic_dir is more precice, needs to change at top
+  $out_file=~s|$vic_dir|$git_dir|;
   $out_file=~s|$home_dir|$git_dir|;
   $out_file=~s|$prl_dir|$git_dir|;
+  ## fixme. I am not sure why this is required
+  $out_file=~s|/git/git/|/git/|;
   print "$out_file is $out_file\n";
   my $dir=dirname($out_file);
   if(not -d $dir) {
@@ -100,9 +163,13 @@ foreach my $in_file (keys %{$to_repo}) {
     next;
   }
   system("rsync -qa $in_file $out_file");
-  my $ga_file=$in_file;
-  $ga_file=~s|$home_dir/||;
-  $ga_file=~s|$prl_work_dir/||;
+  #my $ga_file=$in_file;
+  #$ga_file=~s|$vic_dir|$git_dir|;
+  #$ga_file=~s|$home_dir/||;
+  #$ga_file=~s|$prl_work_dir/||;
+  #$ga_file=~s|/git/git/|/git/|;
+  my $ga_file=$out_file;
+  $ga_file=~s|$git_dir/||;
   if(not $do_test) {
     system("cd $git_dir ; git add $ga_file");
   }

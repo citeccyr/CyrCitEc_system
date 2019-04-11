@@ -3,13 +3,13 @@
 
 
 use Getopt::Std;
-getopts('JKjnNb:s:');
+getopts('JKjnNb:s:t:');
 
 ##(?? no.) if we have no option to sea
 my $SPHINX_SEARCH;
 my $db_file = $opt_b // '/var/hhome/_sphinx/handle.db';
 my $K_flag = $opt_K;
- $K_flag = 1;  # uncomment @TKversion
+$K_flag = 1;
 
 if( -r $db_file ) {
 	use DB_File;
@@ -22,12 +22,13 @@ if( -r $db_file ) {
 $jfile = shift;
 die <<EE unless $jfile;
 recitex.pl - references and citation extraction
-usage: recitex.pl [-JKjn] [-b spx_db_file] [-s spx_ip:port] path/file[.json] [source_handle]
+usage: recitex.pl [-JKjnN] [-t timeout] [-b spx_db_file] [-s spx_ip:port] path/file[.json] [source_handle]
 	-j -- dump source text extracted from json
 	-J -- dump source text extracted from json, rearranged properly
 	-K -- TK output format
 	-n -- do not find citations, make reference list only
 	-N -- do not rearrange json text
+	-t -- real time limit, seconds; default - no limit
 	-s -- Sphinx address:port,
 	-b -- db file to convert Sph answer to handle, assoc. with the reference
 EE
@@ -50,7 +51,7 @@ $etal = "(?:\\bet\\s+al\\b\\.?|\\bи\\s+др\\b\\.?)";
 $etal = decode("utf8", $etal, Encode::FB_CROAK );
 
 # "and/," template:
-$and_or_comma = "\\s*(?:,\\s*|\\band\\s+|\\bи\\s+)";
+$and_or_comma = "\\s*(?:,\\s*|\\band\\s+|\\bи\\s+|\\&\\s*)";  # 20190201 +&
 $and_or_comma = decode("utf8", $and_or_comma, Encode::FB_CROAK );
 
 # Da De Den Der Dos
@@ -65,6 +66,8 @@ $nbsp = decode("cp1251", $nbsp, Encode::FB_CROAK );
 $RLEN = 800;    # 20181023 successive S.Parinov's rule
 
 $jfile .= ".json" if $jfile !~ /\.j\w*$/i;
+
+alarm $opt_t if $opt_t;
 j2str( $jfile );        # --> @lines: [@transform,offset,str,pageNo] -- [0-8].
 
 ($file = $jfile)=~ s,.*/,,;
@@ -226,7 +229,9 @@ if( $opt_j ) {
 	exit 0;
 }
 
-goto SKIP_REARRANGE if $opt_N;
+goto SKIP_REARRANGE
+#20190321       if $opt_N
+;
 # Sometimes 'jsonizator' reshuffles the data, though keeps their coordinates.
 # First case met: j-neicon/agx/y:2012:i:4:p:13-17.json, see the headline of the ref list.
 # Trying to rearrange to restore the right order.
@@ -311,11 +316,25 @@ if( $opt_J ) {
 
 # map {print8( $page[$_].":".$vpix[$_].":".$txt[$_] );} (0..$#txt); # exit;
 
-#$src =~ s/$nbsp/ /gs;  # no difference?
+$src =~ s/$nbsp/ /gs;  # no difference?
 
 # markers of the "References" section:
 # v1:
-$ref_keyl1 = "references";
+$ref_keyl1 = "(?:" . join( "|",
+	"literaturverzeichnis",
+	"references?",
+	"works\\s+cited",
+	"refer.ncias\\s+bibliogr.ficas",
+	"r.f.rences\\s+bibliographiques",
+	"referencias",
+	"literature",
+	"(?:selected\\s+)?bibliography",
+	"bibliografie",
+	"bibliograf.a",
+) . ")" ;
+
+# selected bibliography hinted 20190312 by SP
+# work cited; bibliography; reference - 20190313
 push @ref_marker,
  "литература\\s*/\\s*references",
  "библиографически[ей]\\s*(?:список|ссылки)",
@@ -327,53 +346,72 @@ push @ref_marker,
  "л\\s*и\\s*т\\s*е\\s*р\\s*а\\s*т\\s*у\\s*р\\s*а\\s*\$",
  "источники\\s*\$",
  "^\\s*ссылки\\s*\$",
- $ref_keyl1;
+ "използвана\\s+литература",
+
+ $ref_keyl1
+;
+$rno = 0;
 for $rk ( @ref_marker ) {
 	$rk = decode("utf8", $rk, Encode::FB_CROAK );
-	if( $src =~ /(.*)^([^[:alpha:]]*$rk [^\n]*)[\s\[]*1\b/imsux ) {
+# print8( "===RK:$rk\n");
+#        if( $src =~ /(.*)^([^[:alpha:]]*$rk \W*$)[ \s\[ ]* 1\b\s*/imsux )
+#20190315:
+	if( $src =~ /(.*)^([ivxlcdm]*[^[:alpha:]]*$rk \W*$)[ \s\[ ]* 1\b\s*/imsux )
+	{
 #20180626
  $ssrc //= $1;
 		$src = $1;
 		$rmk = $2;
 		$pos = length( $src ) + length( $rmk );
-# print8( "$rk\n" );
+# print8( "===RMK-N:$rmk\n===':".substr($',0,99)."\n" );
 		$match_type = 1;
 		$enum = 1;
-		($references = $') =~ s/^\s*\]//s;
-		$references = "1$'";
-		$dot = $references =~ /^1\./ ? "\\." : "";
+# 20190314
+		$references = $';
+		$dot = $references =~ /^([-\.])/ ? $1 : "";
+		$references =~ s/^[\s*\]]*/1 /s;
+#/
+		# $references = "1$'";
 		last;
 	}
+	++ $rno;
 }
 # print8( "match_type:$match_type;\n" ); exit;
 
 if( ! $match_type ) {
+  $rno = 0;
   for $rk ( @ref_marker ) {
 	# $rk = decode("utf8", $rk, Encode::FB_CROAK );
 # *****!!! 'decode' leaves the result in it's 2nd argument?!!!
-	if( $src =~ /(.*)^([^[:alpha:]]*$rk\W*)/imsux ) {
+#        if( $src =~ /(.*)^([^[:alpha:]]*$rk\W*$)/imsux )
+#20190315:
+	if( $src =~ /(.*)^([ivxlcdm]*[^[:alpha:]]*$rk\W*$)/imsux )
+	{
 #20180626
+#print8("===MT2 found\n");
  $ssrc //= $1;
 		$src = $1;
 		$rmk = $2;
 		$pos = length( $src ) + length( $rmk );
+# print8( "===RMK-U:at$pos:$rmk\n===':".substr($',0,99)."\n" );
 		$match_type = 2;
 		$enum = 0;
 		$references = $';
 		last;
 	}
+	++ $rno;
   }
 }
 
 #  print8( "=== MATCH:$match_type,POS:$pos->$posmap[$pos],PLINE:$pos2line[$pos],"
-#        . substr($src, -120) . "\n========= $rmk\n========= "
+#        . substr($src, -120) . "\n========= $rmk\n=========RS:"
 #        . substr($references,0,120)."\n\n\n" );
 #  exit;
 
-if( $match_type )
-{
+if( $match_type ) {
+  if( $rno < $#ref_marker ) {   # 20190314
 	$references =~ s/^\s*$ref_keyl1\b.*//imsux;
-
+  }
 # print8( "=== enum:$enum, dot:$dot, references:".substr($references, 0,99).">>>\n" );
 
 } else {
@@ -387,17 +425,22 @@ EE
 	exit 1;
 }
 # print "===E:$enum,D:$dot,P:$posmap[$pos];R:", length($references),":", substr($references,0,99),"\n";
- $references =~ s/^\W+//sxu && die "==$&==";    # must not happen
+# $references =~ s/^\W+//sxu && die "==$&==";    # must not happen
 # exit;
 
 # stop words:
-$notname = "корректор|редактор|художник|макет|верстка";
+$notname = "корректор"
+ . "|редактор"
+ . "|художник"
+ . "|макет"
+ . "|верстка"
+;
 $notname = decode("utf8", $notname, Encode::FB_CROAK );
 
 goto UNNUM_REF if ! $enum;
 
 $refno = 1;
-if( $references !~ s/^[\s\[]*$refno[\s\]]*$dot\s*(?:(?:                       $dade\s*)*(\b[[:upper:]]))/$1/sx ) {
+if( $references !~ s/^[\s\[]*$refno[\s\]-]*$dot\s*(?:(?:                       $dade\s*)*(\b[[:upper:]]))/$1/sx ) {
 	print <<EE;
 No references found (2)
      </input>
@@ -469,9 +512,20 @@ goto SNOSKI;
 UNNUM_REF:;    ####### Unnumbered references
 print "      <linking enum=\"0\">\n";
 
+#20181017:??? $pos += length( $` ) if $references =~ m/((([[:alpha:]$dashs]){2,}\s)(\s*[[:alpha:]]{1,2}\.){1,3}[,\s]*)+/sxu;
 $refno = 0;
-while(
-	$references =~ m/^(([[:upper:]]([[:alpha:]'$dashs])+,?\s)(\s*[[:alpha:]]{1,2}\.){1,3}[,\s]*)+/msxu
+#               Aaronson, S. and Reeves, J. (2002), The European Response to Public Demands
+#Ahlfeldt, Gabriel M., Stephen J. Redding, Daniel M. Sturm, and Nikolaus Wolf, -The economics of
+#density: Evidence from the Berlin Wall,
+# print8( "===R ".substr($references, 0, 800)."\n===\n" );
+while(                                                                             # \b  ?
+	$references =~ m/^\s*(
+			([[:upper:]]([[:alpha:]'$dashs])+,?\s)  # Last name
+			(\s*[[:alpha:]]{1,2}\b\.?){1,3}         # Initials
+			# \s*(?:,|and)\s*                         # Junction
+			$and_or_comma*                          # Junction 20190329
+			)+/msxu
+# Aaronson, S. and Reeves, J. (2002), The European Response to
 #        ||
 #        $references =~ m/(([[:alpha:]$dashs]{2,}[,\s])(\s*[[:alpha:]]{1,2}  ) [.,\s]*)+\.\s*/sxu
 
@@ -480,7 +534,10 @@ while(
 	$references = $';
 	$athr = $&;
 	$ttle = $`;
-# print "===T:$ttle\n===A:$athr\n===R:",substr($references, 0, 216), ">>>\n";
+
+	last if length $ttle > 1536;    # 20190314
+
+# print8( "===${refno}T:$ttle\n===A:$athr\n===R:".substr($references, 0, 216). ">>>\n" );
 	if( $a0 ) {
 		$a0 .= $ttle;
 		$pos += length( $a0 );
@@ -865,9 +922,11 @@ sub prref {
 	my( $num, $title, $start, $end, $author, $year ) = @_;
 	chomp $title;
 
+	return 1 if $title !~ /[[:alpha:]]/;    # 20190313
 	$title =~ s/\f.*//s;
-# print8( "===A:$title;\n" ); return 0;# exit;
+# print8( "===PRREF:$num, $title>>>\n" ); # return 0;# exit;
 	my( $from_pdf, $i, $doi ) = $title;
+	$end = $start - 1 + length $title;
 #20180530 doi:
 	if( $title =~ s=\b(doi:\W* | (?:https?:\W*//\s*)?(?:dx\.\s*)?doi\.\s*org/\s*
 			  ) (10\s*\.\d{4,}[^<"']{2,80}).*==isx )
@@ -879,9 +938,8 @@ sub prref {
 		$doi = "\n    doi=\"$doi\"";
 	}
 
-	$end = $start - 1 + length $title;
     #? $title =~ s/\b(van|von|der?|...)\b//gis   ?
-# print "===$num:E-S:",$end-$start," TL:", length($title),"\n"; return;
+# print8( "===$num:E-S:$end-$start, TLEN:" . length($title) . "\n" ); return;
 
 # 20180921: find 'year' after 'doi' removal --S.Parinov
 	@year = ( $title =~ /\b\d{4}[[:alpha:]]?\b/gs );
@@ -910,17 +968,17 @@ sub prref {
 		  (?:
 			(?:                     $dade\s*)*
 			(?:(?:\s* [[:upper:]] (?:[[:alpha:]'$dashs])+ )+,?\s )
-			(?:\s*[[:alpha:]]{1,2}\.){1,3}(and|&|,|\s)*
+			(?:\s*[[:alpha:]]{1,2}\.){1,3} $and_or_comma*   # 20190329 (and|&|,|\s)*
 		  ) |
 		  (?:
 		       (?:\s*[[:alpha:]]{1,2}\.){1,3}
 		       (?:\s*                     $dade\s*)*
-		       (?:(?:\s*[[:upper:]] (?:[[:alpha:]'$dashs])+ )+ (\s|,|\.|&|and)*\s? )
+			?:(?:\s*[[:upper:]] (?:[[:alpha:]'$dashs])+ )+ $and_or_comma*   # 20190329 (\s|,|\.|&|and)*\s?
 		  ) )+/sxu
 	 || $title =~ /^(([[:alpha:]]{2,}[,\s])(\s*[[:alpha:]]{1,2}  ) [.,\s]*)+\.\s*/sxu
 	) {                                     #  \w was here - 20181023
-		$title = $';
 		$author = $&;
+		$title = $';
 
 		#2A $author =~ s/\b\w{1,2}\b//gu;
 #20181015:
@@ -941,6 +999,7 @@ sub prref {
 		undef $url if $url =~ /\bdoi\.org\b/i;
 # printf "===URL: $url\n===TITLE: $title\n";
 	}
+# print8( "===PRREF:A:$author|\nT:$title|\n" );
 
 	if( ! $author &&
 	    $title =~ /(.*?\W[[:alpha:]]{1,2}\.\s*)([^.]{30})/su ) { # 30 non-dots -- S.Parinov
@@ -949,9 +1008,12 @@ sub prref {
 		#2A $author =~ s/\b\w{1,2}\b//gu;
 		$author =~ s/\b\w  ?  \b//gux;
 		$author =~ s/[^[:alpha:]'$dashs]/ /gu;
-# print "===T2:$title\n===A2:$author\n";
+# print8( "===T2:$title\n===A2:$author\n" );
 	}
 	return 1 if $author =~ /^\s*($notname)\b/i;     # 20170907
+	$author =~ s,^\W+,,s;   # non-alphanum in the beginning
+	$author =~ s,\W+$,,s;   #               and the end
+
 	$title =~ s/$etal//i;
 # - is not recognized as author name => left in the beginnig of the title
 						# remove:
@@ -959,8 +1021,11 @@ sub prref {
 	$title =~ s,^\W+,,su;                   # - non-alphanum in the beginning
 	$title =~ s,//.*,,su    or              # - from //
 	    $title =~ s,/.*,,su;                # - from / if there were no //
-	$title =~ s/^(.{16,}?)\..*/$1/u;        # - from '.' after 16-th position
-	$title =~ s,\s[[:alpha:]]\..*,,su;      # - from a single letter+'.'
+#20190329         $title =~ s/^(.{16,}?)\..*/$1/u;        # - from '.' after 16-th position
+#20190329         $title =~ s,\s[[:alpha:]]\..*,,su;      # - from a single letter+'.'
+	$title =~ s/\bvol\..*//is;              # - from 'volume' attrib
+	$title =~ s/^(.{16,}?)\b[[:alpha:]]\..*/$1/s    # - from a single letter+'.' after 16-th position
+	or $title =~ s/^(.{16,}?)\..*/$1/s;             # - or from '.' after 16-th position
 	$title =~ s,\s((url\W*)?https?          # - from [url ]http:
 			|url                    #      url:
 			|editors                #      editors:
@@ -969,6 +1034,7 @@ sub prref {
 
 	$title =~ s/[^-\w]/ /gs;        # \W
 	$title =~ s/\s+$//gs;
+# print8( "===PRREF:A:$author|\nT:$title|\n" );
 
 	undef $handle;
 	undef $handle_sup;

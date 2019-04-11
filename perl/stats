@@ -24,12 +24,15 @@ use Cec::Xml;
 use Cidig::Peren;
 use Cidig::Files;
 
+use Sys::RunAlone;
 
 ## -s show
 ## -l limit to a handle expression
 my %o;
 getopts('snl:r:',\%o);
 ## -s show
+
+$|=1;
 
 my $do_show_series_only=$o{'s'};
 my $do_no_series=$o{'n'};
@@ -61,10 +64,13 @@ foreach my $xslt_file (`ls $xslt_dir/stats_?.xslt.xml`) {
 
 my $p=Cidig::Peren->new({'verbose'=>'1',
 			 'force'=>0});
+print "I prepare files ...";
 my $tmp_file=$p->prep_file_list('/summary.xml');
+print " done";
 
 my $total_files=`grep -c ^ $tmp_file`;
 chomp $total_files;
+print "I have $total_files files\n";
 
 my $count_done=0;
 my $peren_dir;
@@ -74,14 +80,16 @@ if(not $do_no_series) {
   #my $cover_sheet=&Cec::Xslt::get_sheet('stats_series');
   foreach my $file (`ls $series_stats_dir/*.xml`) {
     chomp $file;
-    #print "I look at $file\n";
+    print "I look at $file\n";
     my $out_file=substr($file,0,length($file)-4). '.html';
     $out_file=$report_dir.substr($out_file,length($series_stats_dir));
-    #print "$out_file\n";
+    print "My out_file is $out_file\n";
+    print "I parse file $file ...";
     my $source;
     eval {
       $source = XML::LibXML->load_xml(location => $file);
     };
+    print " done\n";
     my $prevpath=&Cec::Past::get_prevpath($out_file);
     my $params={};
     if($prevpath) {
@@ -89,9 +97,18 @@ if(not $do_no_series) {
     }
     $params->{'date_pretty'}="'$pretty_today'";
     #my $results = $cover_sheet->transform($source,$params);
+    print "I start the transform stats_series ...";
     my $results=&Cec::Xslt::transform($source,'stats_series',$params);
-    &Cec::Xml::install_doc($results,$out_file);
+    print "done\n";
+    my $installed=&Cec::Xml::install_doc($results,$out_file);
+    if($installed) {
+      print "I wrote $out_file\n";
+    }
+    else {
+      print "I keep $out_file\n";
+    }
   }
+  print "Done with files for do_no_series\n";
 }
 
 if($do_show_series_only) {
@@ -104,8 +121,10 @@ my $d;
 my $s;
 my $done;
 #foreach my $peren_dir (shuffle `cat $tmp_file`) {
+print "I start the main loop\n";
 foreach my $peren_dir (sort `cat $tmp_file`) {
   chomp $peren_dir;
+  print "I look at $peren_dir\n";
   if($do_restrict) {
     if(not $peren_dir=~m|\Q$do_restrict\E|) {
       next;
@@ -158,6 +177,7 @@ foreach my $peren_dir (sort `cat $tmp_file`) {
     }
     $params->{'date_pretty'}="'$pretty_today'";
     my $results=&Cec::Xslt::transform($source,$x->{$indic},$params);
+    # print $results;
     #my $results = $sheet->transform($source,$params);
     my $count=&collect_number($results);
     if(not $count=~m|^\d+$|) {
@@ -247,3 +267,5 @@ sub collect_number {
   }
   confess "I see no count in '$title'";
 }
+
+__END__

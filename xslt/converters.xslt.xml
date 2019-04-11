@@ -13,21 +13,30 @@
 		select="'https://socionet.ru/pdfviewer.xml?h='"/>
   <xsl:variable name="self"
 		select="'http://cirtec.ranepa.ru'"/>
+  <xsl:param name="self_url"/>
   <xsl:variable name="dis_url">
-    <xsl:value-of select="$self"/>
+    <xsl:if test="$self_url!=''"><xsl:value-of select="$self_url"/></xsl:if>
+    <xsl:if test="$self_url=''"><xsl:value-of select="$self"/></xsl:if>
     <xsl:text>/analysis/spadist/cgi/spadist4bundle.cgi?code=</xsl:text>
   </xsl:variable>
   <xsl:variable name="fra_url">
-    <xsl:value-of select="$self"/>
+    <xsl:if test="$self_url!=''"><xsl:value-of select="$self_url"/></xsl:if>
+    <xsl:if test="$self_url=''"><xsl:value-of select="$self"/></xsl:if>
     <xsl:text>/analysis/spadist/cgi/phrases.cgi?phrase=</xsl:text>
   </xsl:variable>
   <xsl:variable name="top_url">
-    <xsl:value-of select="$self"/>
+    <xsl:if test="$self_url!=''"><xsl:value-of select="$self_url"/></xsl:if>
+    <xsl:if test="$self_url=''"><xsl:value-of select="$self"/></xsl:if>
     <xsl:text>/analysis/spadist/cgi/phrases.cgi?topic=</xsl:text>
   </xsl:variable>
   <xsl:variable name="dif_url">
-    <xsl:value-of select="$self"/>
+    <xsl:if test="$self_url!=''"><xsl:value-of select="$self_url"/></xsl:if>
+    <xsl:if test="$self_url=''"><xsl:value-of select="$self"/></xsl:if>
     <xsl:text>/analysis/spadist/cgi/dif.cgi?code=</xsl:text>
+  </xsl:variable>
+  <xsl:variable name="group_loc">
+    <xsl:value-of select="$self"/>
+    <xsl:text>/groups/</xsl:text>
   </xsl:variable>
 <!--  <xsl:variable name="phrases_url"> -->
 <!--    <xsl:value-of select="$self"/> -->
@@ -114,18 +123,24 @@
 		  select="substring-before($cut_2,':')"/>
     <xsl:variable name="part_4"
 		  select="substring-before($cut_3,':')"/>
-    <xsl:choose>
-      <xsl:when test="$part_1='repec'">
-	<xsl:text>RePEc</xsl:text>
-      </xsl:when>
-      <xsl:otherwise>
-	<xsl:value-of select="$part_1"/>
-      </xsl:otherwise>
-    </xsl:choose>
-    <xsl:text>/</xsl:text>
-    <xsl:value-of select="$part_2"/>
-    <xsl:text>/</xsl:text>
-    <xsl:value-of select="$part_3"/>
+    <xsl:variable name="base_path">
+      <xsl:choose>	
+	<xsl:when test="$part_1='repec'">
+	  <xsl:text>RePEc</xsl:text>
+	</xsl:when>
+	<xsl:otherwise>
+	  <xsl:value-of select="$part_1"/>
+	</xsl:otherwise>
+      </xsl:choose>
+      <xsl:text>/</xsl:text>
+      <xsl:value-of select="$part_2"/>
+      <xsl:text>/</xsl:text>
+      <xsl:value-of select="$part_3"/>
+    </xsl:variable>
+    <xsl:if test="$group">
+      <xsl:text>../../stats/</xsl:text>
+    </xsl:if>
+    <xsl:value-of select="$base_path"/>    
   </xsl:template>
   <xsl:template name="handle_to_series">
     <xsl:param name="in"/>

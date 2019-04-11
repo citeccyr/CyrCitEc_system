@@ -1,0 +1,52 @@
+#!/usr/bin/python3.7
+
+#import datetime
+#import glob
+import os
+import os.path
+#import os.walk
+#import stat
+#import re
+#import json
+import lxml.etree as etree
+
+## local imports 
+import paths
+import withfiles
+import common
+
+#dirs = paths.dirs
+files = paths.files
+urls = paths.urls
+
+print(paths.dirs['oai_converter'])
+print(paths.dirs['input'])
+handle_sheet_fufi = paths.dirs['xslt'] + '/' + 'get_handle.xslt.xml'
+handle_sheet = etree.XSLT(etree.parse(handle_sheet_fufi))
+archive_sheet_fufi = paths.dirs['xslt'] + '/' + 'get_archive.xslt.xml'
+archive_sheet = etree.XSLT(etree.parse(archive_sheet_fufi))
+
+
+for root, dirs, files in os.walk(paths.dirs['oai_converter'], topdown = False):
+    for name in files:
+        fufi = os.path.join(root, name)
+        if(not str(fufi)[-4:] == '.xml'):
+            continue
+        handle = str(handle_sheet(etree.parse(fufi)))
+        archive = str(archive_sheet(etree.parse(fufi)))
+        series = os.path.basename(os.path.dirname(fufi))
+        input_dir = paths.dirs['input']
+        target = input_dir + '/' + archive + '/' + series + '/' + name
+        print(target)
+        continue
+        if(str(series)[-4:] == '.tmp'):
+            continue
+        print('target is ' + target)
+        withfiles.prepare(target)
+        common.rsync(fufi, target)
+        print(fufi + ' ' + archive + ' ' + series + ' ' + handle)
+        
+        
+        #    for name in dirs:
+#        print(os.path.join(root, name))
+#

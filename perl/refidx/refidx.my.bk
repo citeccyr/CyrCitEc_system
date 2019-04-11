@@ -1,0 +1,207 @@
+#!/usr/bin/perl
+
+# rm /home/prl/opt/refidx/r_* ;
+# /home/prl/perl/refidx/refidx.pl -r /home/cec/opt/peren/ -i summary.xml -b /home/prl/opt/refidx
+# /home/cec/perl/bundles > $LOG/bundles.log
+
+=descr
+reference index -- see "new phase" intercourse @ 201808{27-31}.
+( Thomas, sorry!!! --Vic :)
+
+Task: given
+	<handle + reference number>
+output all
+	<handle + reference number>
+of the _alike_ references.
+
+Introduce
+"canonical" representattion (CR) of the alike references:
+Doi or (if no Doi) 'Author@Title@Year' where
+  A,T have only letters (lowercased) and digits left,
+  Y: 4 digits-beginning string, D: verbatim
+
+lrn - local reference number within the reference list of the article
+grn - globe (unique) reference number within the index
+refid = 'lrn@handle'
+
+data structure:
+ Hash %G (file r_id2n.db): refid -> grn
+ List of lists @s_list (storable, file r_list.stor): grn -> [ refid ]
+      - list of reference identifiers of the same CR (see above)
+ Hash %grn (file r_atyd2n.db): ATY or DOI -> grn
+      - aux., to update the index
+=cut
+
+
+use Encode qw( decode encode );
+use Storable;
+use DB_File;
+use Getopt::Std;
+use Data::Dumper;
+use Digest::MD5 qw(md5 md5_hex md5_base64);
+
+if( ! @ARGV ) {
+	print<<EE;
+Usage: refidx.pl options archives
+ options:
+  -r (source) reference hierarchies directory
+  -b target db directory
+  -i include only files matching this regex
+  -v verbose (debugging)
+ archives: if not specified, all content of source directory ('regex' filtered)
+EE
+	exit 1;
+}
+
+my %o;
+getopts('b:i:v:r:',\%o);
+
+my $r_dir = $o{'r'} // '/home/cyrcitec';
+my $db_dir= $o{'b'} // '/var/hhome/vic/lafka';
+my $regex = $o{'i'};
+tie %G, 'DB_File', "$db_dir/r_id2n.db" or die "tie $db_dir/r_id2n.db";
+tie %grn, 'DB_File', "$db_dir/r_atyd2n.db" or die;
+$listfile = "$db_dir/r_list.stor";
+chdir $r_dir or die;
+push @ARGV, "." if ! @ARGV;
+my $items;
+
+#print Dumper(\%G);print Dumper(\%grn);print Dumper($s_list);exit;
+$globcnt = $grn{""};
+if( -s $listfile ) {
+  $s_list = retrieve $listfile;
+  die "inconsistency1" unless $globcnt;
+} else {
+  die "inconsistency2" if $globcnt;
+  push @{ ${$s_list} [0] } , 'lrn@handle'; # initial storing
+}
+
+my $totfiles = 0;
+my $item;
+while( $arc = shift ) {
+  $arc = "r-$arc" if -d "r-$arc";
+  die "I can't deal with your argument $arc" unless -d $arc;
+
+  open F, "find $arc -type f|grep 'bkr'|";
+
+  while( <F> ) {
+    chomp;
+    next if $regex && ! /$regex/;
+#last if $totfiles>33;
+#next if ! (/hepato/ && /46\-58/) && ! (/jtransplantologiya/ && /30\-36/);
+
+    $file=$_;
+    print "$totfiles. $grn. I look at $file\n"   if $o{'v'};
+    open X, $_ or die;
+    undef $/;
+    @xml = split /<\/reference>/, decode( "utf8", $xml = <X>, Encode::FB_CROAK );
+    $/ = "\n";
+    pop @xml;
+    next if $xml[0] !~ /<source handle="(.*?)"/;
+    $handle = $1;
+    if(not $handle) {
+      print "$file has no handle\n";
+      next;
+    }
+    $totfiles++;
+
+		my @xml0 = split /<reference /, $xml[0]; $xml[0] = @xml0[1]; # prl: fix start value, because this attr may exists in "<version" tag!
+    $lrn = 0;       # local ref number
+    for (@xml) {
+      ++ $lrn;
+      undef $aty;
+      undef $item;
+      if( /doi="(.+?)"/s ) {
+	# if doi exists do not use aty
+	$doi = encode( 'UTF-8', $1 );
+	$item = id($doi) if !$grn{ $doi };
+	$grn = $grn{ $doi }
+	  or $grn = $grn{ $doi } = ++ $globcnt;
+      }
+      else {
+	next unless /\bauthor="(.*?)"/ms;
+	next unless ($a = $1) =~ /[[:alpha:]]/;
+	$a =~ s/\s+//g;
+	$a =~ s/[^[:word:]]//g;
+
+	next unless /\btitle="(.*?)"/ms;
+	next unless ($t = $1) =~ /[[:alpha:]]/;
+	$t =~ s/\s//g;
+	$t =~ s/[^[:word:]]//g;
+
+	# next unless   # ignore/do not ignore references w/o year
+	$y = /year="(\d{4}.*?)"/s ? $1 : undef;
+	$y =~ s/\s+//g;
+	$y =~ s/[^[:word:]]//g;
+
+	$aty = encode( 'UTF-8', lc join '@', $a, $t, $y );
+	$item = id($aty) if !$grn{ $aty };
+	$grn = $grn{ $aty }
+	  or $grn = $grn{ $aty } = ++ $globcnt;
+	undef $doi;
+      }
+#print($totfiles.' ') if($totfiles%1000==1);next if !($file =~ /\/bkr\//); me('??'.$handle);
+      $offset = /start="(.*?)"/s ? $1 : undef;
+      if( $grn0 = $G{ $lrn.'@'.$handle } ) {
+	die "remap: $file $grn->$grn0 at ".$lrn.'@'.$handle if $grn0 != $grn;
+      } else {
+	$G{ $lrn.'@'.$handle } = $grn;
+	push @$items, $item if $item;
+	if( $o{'v'} ) {    # debugging mode
+	  push @{${$s_list}[$grn]},
+	    join( '@',$lrn,$handle,$offset ); #,$aty.$doi);
+	} else {
+	  push @{${$s_list}[$grn]} ,
+	    join( '@',$lrn,$handle,$offset);
+	  # offset - S.Parinov's favorite attribute
+	}
+      }
+    }
+    
+    
+    foreach my $k (keys %grn) {
+    	#$grn{$k} = $grn{$k}.' ' .id($k);
+    }
+    dbg((scalar @items).' ** '.$grn.'==='.$item.' -----'. $aty.'----'.$handle.'----'.$file);#me('xml');
+    print Dumper(\%G);
+    my %r_grn = reverse %grn;
+		print Dumper(\%r_grn); print Dumper($s_list);
+		print Dumper($items);me(1);
+  }
+}
+#print Dumper(\%G);
+#print Dumper(\%grn);
+#my @keys = sort { $grn{$a} <=> $grn{$b} } keys(%grn);
+me(3333);
+
+my $i_cnt = @$items;
+my $g_cnt = keys %grn; 
+my $l_cnt = @{$s_list}; 
+print $g_cnt." =? ".($l_cnt-1)." ?= $i_cnt IS THE SAME \n" ;
+
+#exit;
+$grn{""} = $globcnt;
+store $s_list, $listfile;
+store $items, "$db_dir/r_shids.stor";
+
+sub id {
+  my $b=shift;# // confess "I need this defined.";
+  #my $md5  = Digest->new("MD5");
+  my $md5 = Digest::MD5->new;
+  $md5->add($b);
+  my $out=$md5->b64digest();
+  $out=~s|\+||g;
+  $out=~s|/+||g;
+  $out=substr($out,0,6);
+  return $out;
+}
+
+
+sub dbg {
+	if( ref($_[0]) eq 'HASH' || ref($_[0]) eq 'ARRAY' ) { print Dumper($_[0]); }
+	elsif($_[0]) { print $_[0]."\n"; }
+	else { print "-EMPTY-\n"; }
+}
+sub me {
+	dbg(shift);	exit;
+}
