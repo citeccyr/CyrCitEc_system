@@ -51,7 +51,7 @@ The following repositories contain work that was written as part of Cirtec.
 
 * [Database](https://github.com/tonal/cirtec_db)
 
-* [Logical labeling PFD documents](https://github.com/citations-ai/linelabeler) 
+* [Layout logical labelling](https://github.com/citations-ai/linelabeler) 
 
 ## [Cirtec Outputs](http://cirtec.ranepa.ru/)
 
