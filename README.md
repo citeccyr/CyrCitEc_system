@@ -49,6 +49,10 @@ The following repositories contain work that was written as part of Cirtec.
 
 * [N-grams and Clustering](https://github.com/gipertech/cirtec)
 
+* [Database](https://github.com/tonal/cirtec_db)
+
+* [Logical labeling PFD documents](https://github.com/citations-ai/linelabeler) 
+
 ## [Cirtec Outputs](http://cirtec.ranepa.ru/)
 
 The Cirtec project is funded by [RANEPA](https://www.ranepa.ru/eng/).
